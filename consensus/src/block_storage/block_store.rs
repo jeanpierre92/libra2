@@ -26,9 +26,14 @@ use libra_types::{ledger_info::LedgerInfoWithSignatures, transaction::Transactio
 use std::{
     collections::vec_deque::VecDeque,
     sync::{Arc, RwLock},
-    time::Duration,
+    time::{Duration},
 };
 use termion::color::*;
+
+// JP CODE
+use std::io::{prelude::*, BufWriter};
+use std::{fs, thread, path::Path, fs::OpenOptions, time::{SystemTime, UNIX_EPOCH}};
+use futures::{channel::mpsc::{channel, Sender, Receiver}};
 
 #[cfg(test)]
 #[path = "block_store_test.rs"]
@@ -37,8 +42,39 @@ mod block_store_test;
 #[path = "sync_manager.rs"]
 pub mod sync_manager;
 
-fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>]) {
+// JP CODE
+pub struct JPsenderStruct {
+    to_file: i32,
+    message: String,
+}
+
+fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>], mut metric_sender_jp: Sender<JPsenderStruct>) {
     for block in blocks_to_commit {
+
+        // JP CODE
+        let block_time = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
+
+        if let Some(payload) = block.payload() {
+            let nr_txns = payload.len();
+            if nr_txns > 0 {
+                let mut msg = format!("({:?},{}{{", block_time, nr_txns);
+                for transaction in payload {
+                    msg.push_str(&format!("({:?},{}),", transaction.sender(), transaction.sequence_number()));
+                }
+                if let Some(last_char) = msg.pop() {
+                    if last_char != ',' {
+                        msg.push(last_char);
+                    }
+                }
+                msg.push_str("})");
+                metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: msg}).unwrap_or_else(|error| {
+                    println!("Error: {:?}", error);
+                });  
+            }
+        }
+        
+
+
         if let Some(time_to_commit) =
             duration_since_epoch().checked_sub(Duration::from_micros(block.timestamp_usecs()))
         {
@@ -96,6 +132,7 @@ pub struct BlockStore {
     storage: Arc<dyn PersistentLivenessStorage>,
     /// Used to ensure that any block stored will have a timestamp < the local time
     time_service: Arc<dyn TimeService>,
+    metric_sender_jp: Sender<JPsenderStruct>,
 }
 
 impl BlockStore {
@@ -106,6 +143,46 @@ impl BlockStore {
         max_pruned_blocks_in_mem: usize,
         time_service: Arc<dyn TimeService>,
     ) -> Self {
+    
+        // JP CODE
+        let (tx, mut rx): (Sender<JPsenderStruct>, Receiver<JPsenderStruct>) = channel(1024);
+        fs::create_dir_all("/jp_metrics").unwrap();
+
+        thread::spawn(move || {
+            let paths = vec!["jp_blockstore_process_block.csv"];
+            let mut buf = vec![];
+
+            for i in 0..paths.len() {
+                let buf_handle = BufWriter::new(OpenOptions::new()
+                .write(true)
+                .read(true)
+                .append(true)
+                .create(true)
+                .open(Path::new(&format!("jp_metrics/{}", paths.get(i).unwrap())))
+                .expect("Cannot open file!"));
+                buf.push(buf_handle);
+            }
+
+            loop {
+                let received = rx.try_next();
+                match received {
+                    Ok(raw_msg) => if let Some(mut msg) = raw_msg {
+                        msg.message.push(',');
+                        match msg.to_file {
+                            0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
+                            _ => panic!("shittt"),
+                        }
+                    },
+                    Err(_) => {
+                        for i in 0..buf.len() {
+                            buf[i].flush().unwrap();
+                        }
+                        thread::sleep(std::time::Duration::from_millis(100));
+                    },
+                }
+            } 
+        });
+    
         let highest_tc = initial_data.highest_timeout_certificate();
         let (root, root_metadata, blocks, quorum_certs) = initial_data.take();
         Self::build(
@@ -118,6 +195,7 @@ impl BlockStore {
             storage,
             max_pruned_blocks_in_mem,
             time_service,
+            tx.clone(),
         )
     }
 
@@ -131,6 +209,7 @@ impl BlockStore {
         storage: Arc<dyn PersistentLivenessStorage>,
         max_pruned_blocks_in_mem: usize,
         time_service: Arc<dyn TimeService>,
+        metric_sender_jp: Sender<JPsenderStruct>,
     ) -> Self {
         let RootInfo(root_block, root_qc, root_li) = root;
         //verify root is correct
@@ -178,6 +257,7 @@ impl BlockStore {
             state_computer,
             storage,
             time_service,
+            metric_sender_jp,
         };
         for block in blocks {
             block_store
@@ -223,7 +303,7 @@ impl BlockStore {
             )
             .await
             .expect("Failed to persist commit");
-        update_counters_for_committed_blocks(&blocks_to_commit);
+        update_counters_for_committed_blocks(&blocks_to_commit, self.metric_sender_jp.clone());
         debug!("{}Committed{} {}", Fg(Blue), Fg(Reset), *block_to_commit);
         event!("committed",
             "block_id": block_to_commit.id().short_str(),
@@ -240,6 +320,7 @@ impl BlockStore {
         root_metadata: RootMetadata,
         blocks: Vec<Block>,
         quorum_certs: Vec<QuorumCert>,
+        metric_sender_jp: Sender<JPsenderStruct>,
     ) {
         let max_pruned_blocks_in_mem = self.inner.read().unwrap().max_pruned_blocks_in_mem();
         // Rollover the previous highest TC from the old tree to the new one.
@@ -254,6 +335,7 @@ impl BlockStore {
             Arc::clone(&self.storage),
             max_pruned_blocks_in_mem,
             Arc::clone(&self.time_service),
+            metric_sender_jp,
         );
         let to_remove = self.inner.read().unwrap().get_all_block_id();
         if let Err(e) = self.storage.prune_tree(to_remove) {

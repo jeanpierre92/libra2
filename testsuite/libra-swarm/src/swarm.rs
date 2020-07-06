@@ -89,9 +89,9 @@ impl LibraNode {
         } else {
             node_command.env("STRUCT_LOG_FILE", struct_log_path);
         }
-        node_command
-            .stdout(log_file.try_clone()?)
-            .stderr(log_file.try_clone()?);
+        //node_command
+        //    .stdout(log_file.try_clone()?)
+        //    .stderr(log_file.try_clone()?);
         let node = node_command
             .spawn()
             .context("Error launching node process")?;

@@ -12,7 +12,7 @@ IMAGE="${1:-libra_mint:latest}"
 AC_HOST="${2:-172.18.0.10}"
 AC_PORT="${3:-8080}"
 LOG_LEVEL="${4:-info}"
-nodes="5"
+nodes="2"
 
 docker network create --subnet 172.18.0.0/24 testnet || true
 
