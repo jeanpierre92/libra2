@@ -57,7 +57,7 @@ fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>],
         if let Some(payload) = block.payload() {
             let nr_txns = payload.len();
             if nr_txns > 0 {
-                let mut msg = format!("({:?},{}{{", block_time, nr_txns);
+                let mut msg = format!("{:?}[", block_time);
                 for transaction in payload {
                     msg.push_str(&format!("({:?},{}),", transaction.sender(), transaction.sequence_number()));
                 }
@@ -66,7 +66,7 @@ fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>],
                         msg.push(last_char);
                     }
                 }
-                msg.push_str("})");
+                msg.push_str("]");
                 metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: msg}).unwrap_or_else(|error| {
                     println!("Error: {:?}", error);
                 });  
@@ -167,7 +167,7 @@ impl BlockStore {
                 let received = rx.try_next();
                 match received {
                     Ok(raw_msg) => if let Some(mut msg) = raw_msg {
-                        msg.message.push(',');
+                        msg.message.push('\n');
                         match msg.to_file {
                             0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
                             _ => panic!("shittt"),

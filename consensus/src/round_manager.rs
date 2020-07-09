@@ -228,7 +228,7 @@ impl RoundManager {
                 let received = rx.try_next();
                 match received {
                     Ok(raw_msg) => if let Some(mut msg) = raw_msg {
-                        msg.message.push(',');
+                        msg.message.push('\n');
                         match msg.to_file {
                             0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
                             1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_local_timeout.csv"),
@@ -452,10 +452,14 @@ impl RoundManager {
         // JP CODE
         let start = Instant::now();
 
-        ensure!(
-            self.round_state.process_local_timeout(round),
-            "[RoundManager] local timeout is stale"
-        );
+        //ensure!(
+        //    self.round_state.process_local_timeout(round),
+        //    "[RoundManager] local timeout is stale"
+        //);
+
+        if !self.round_state.process_local_timeout(round) {
+            return Ok(());
+        }
 
         let (use_last_vote, mut timeout_vote) = match self.round_state.vote_sent() {
             Some(vote) if vote.vote_data().proposed().round() == round => (true, vote),
@@ -565,7 +569,7 @@ impl RoundManager {
         // JP CODE
         let duration = start.elapsed();
         //println!("Time elapsed for process_proposal is: {:?}", duration);
-        let msg = format!("({},{:?})", nr_txns, duration.as_micros());
+        let msg = format!("{},{:?}", nr_txns, duration.as_micros());
         self.metric_sender_jp.try_send(JPsenderStruct {to_file: 2, message: msg}).unwrap_or_else(|error| {
             println!("Error: {:?}", error);
         });  

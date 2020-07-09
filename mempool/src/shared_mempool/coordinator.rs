@@ -98,7 +98,7 @@ pub(crate) async fn coordinator<V>(
             let received = rx.try_next();
             match received {
                 Ok(raw_msg) => if let Some(mut msg) = raw_msg {
-                    msg.message.push(',');
+                    msg.message.push('\n');
                     match msg.to_file {
                         0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_mempool_process_incomming_tranactions.csv"),
                         1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_ac_client_transaction.csv"),
