@@ -4,7 +4,7 @@
 set -ex
 
 image="${1:-libra_validator_dynamic:latest}"
-nodes="5"
+nodes="2"
 base_ip="172.18.0"
 ip_offset="10"
 bootstrap="$base_ip.$ip_offset"
