@@ -489,7 +489,7 @@ impl EpochManager {
             self.start_processor(payload).await;
         }
         loop {
-            if let Err(e) = monitor!(
+            if let Err(_e) = monitor!(
                 "main_loop",
                 select! {
                     payload = reconfig_events.select_next_some() => {
@@ -507,7 +507,8 @@ impl EpochManager {
                     }
                 }
             ) {
-                error!("{:?}", e);
+                // JP CODE
+                //error!("{:?}", e);
             }
             if let RoundProcessor::Normal(p) = self.processor_mut() {
                 debug!("{}", p.round_state());

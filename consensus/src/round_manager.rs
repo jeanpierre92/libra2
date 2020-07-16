@@ -242,12 +242,14 @@ impl RoundManager {
                 counters::TIMEOUT_ROUNDS_COUNT.inc();
             }
         };
+        
         if !self
             .proposer_election
             .is_valid_proposer(self.proposal_generator.author(), new_round_event.round)
         {
             return;
         }
+
         let proposal_msg = match self.generate_proposal(new_round_event).await {
             Ok(x) => x,
             Err(e) => {
@@ -356,12 +358,18 @@ impl RoundManager {
         author: Author,
         help_remote: bool,
     ) -> anyhow::Result<()> {
-        ensure!(
-            message_round >= self.round_state.current_round(),
-            "round {} is stale than local {}",
-            message_round,
-            self.round_state.current_round()
-        );
+        //ensure!(
+        //    message_round >= self.round_state.current_round(),
+        //    "round {} is stale than local {}",
+        //    message_round,
+        //    self.round_state.current_round()
+        //);
+
+        // JP CODE
+        if !(message_round >= self.round_state.current_round()) {
+            return Ok(());
+        }
+
         self.sync_up(sync_info, author, help_remote).await?;
         ensure!(
             message_round == self.round_state.current_round(),
