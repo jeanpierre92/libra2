@@ -4,7 +4,7 @@
 set -ex
 
 image="${1:-libra_validator_dynamic:latest}"
-nodes="4"
+nodes="8"
 base_ip="172.18.0"
 ip_offset="10"
 bootstrap="$base_ip.$ip_offset"
@@ -22,6 +22,7 @@ for ((node=1; node<$nodes; node++)); do
         --ip $node_ip \
         --network testnet \
         --detach \
+        --cap-add=NET_ADMIN \
         "$image"
 done
 
@@ -36,4 +37,5 @@ docker run \
     --publish 8080:8080 \
     --publish 9101:9101 \
     --publish 9102:9102 \
+    --cap-add=NET_ADMIN \
     "$image"
