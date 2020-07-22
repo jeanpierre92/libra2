@@ -169,7 +169,8 @@ impl BlockStore {
         .await?
         .take();
         debug!("{}Sync to{} {}", Fg(Blue), Fg(Reset), root.0);
-        self.rebuild(root, root_metadata, blocks, quorum_certs)
+        // JP CODE
+        self.rebuild(root, root_metadata, blocks, quorum_certs, self.metric_sender_jp.clone())
             .await;
 
         if highest_commit_cert.ends_epoch() {

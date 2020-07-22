@@ -21,6 +21,7 @@ for ((node=1; node<$nodes; node++)); do
         -e CFG_SEED_PEER_IP="$bootstrap" \
         --ip $node_ip \
         --network testnet \
+        --publish 808$node:8080 \
         --detach \
         --cap-add=NET_ADMIN \
         "$image"

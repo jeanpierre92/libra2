@@ -45,6 +45,11 @@ use crate::{
     util::time_service::duration_since_epoch,
 };
 
+// JP CODE
+use std::{io::{prelude::*, BufWriter}, time::Instant};
+use std::{fs, thread, path::Path, fs::OpenOptions};
+use futures::{channel::mpsc::{channel, Sender, Receiver}};
+
 pub enum UnverifiedEvent {
     ProposalMsg(Box<ProposalMsg>),
     VoteMsg(Box<VoteMsg>),
@@ -187,6 +192,12 @@ pub struct RoundManager {
     network: NetworkSender,
     txn_manager: Box<dyn TxnManager>,
     storage: Arc<dyn PersistentLivenessStorage>,
+    metric_sender_jp: Sender<JPsenderStruct>,
+}
+
+pub struct JPsenderStruct {
+    to_file: i32,
+    message: String,
 }
 
 impl RoundManager {
@@ -201,6 +212,52 @@ impl RoundManager {
         txn_manager: Box<dyn TxnManager>,
         storage: Arc<dyn PersistentLivenessStorage>,
     ) -> Self {
+        // JP CODE
+        let (tx, mut rx): (Sender<JPsenderStruct>, Receiver<JPsenderStruct>) = channel(1024);
+        fs::create_dir_all("/jp_metrics").unwrap();
+
+        thread::spawn(move || {
+            let paths = vec!["jp_consensus_process_new_round.csv", 
+                             "jp_consensus_process_local_timeout.csv", 
+                             "jp_consensus_process_proposal.csv", 
+                             "jp_consensus_process_block_retrieval.csv"];
+
+            let mut buf = vec![];
+
+            for i in 0..paths.len() {
+                let buf_handle = BufWriter::new(OpenOptions::new()
+                .write(true)
+                .read(true)
+                .append(true)
+                .create(true)
+                .open(Path::new(&format!("jp_metrics/{}", paths.get(i).unwrap())))
+                .expect("Cannot open file!"));
+                buf.push(buf_handle);
+            }
+    
+            loop {
+                let received = rx.try_next();
+                match received {
+                    Ok(raw_msg) => if let Some(mut msg) = raw_msg {
+                        msg.message.push('\n');
+                        match msg.to_file {
+                            0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
+                            1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_local_timeout.csv"),
+                            2 => buf[2].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_proposal.csv"),
+                            3 => buf[2].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_block_retrieval.csv"),
+                            _ => panic!("Unknown file to log to"),
+                        }
+                    },
+                    Err(_) => {
+                        for i in 0..buf.len() {
+                            buf[i].flush().unwrap();
+                        }
+                        thread::sleep(std::time::Duration::from_millis(100));
+                    },
+                }
+            } 
+        });
+
         Self {
             epoch_state,
             block_store,
@@ -211,6 +268,7 @@ impl RoundManager {
             txn_manager,
             network,
             storage,
+            metric_sender_jp: tx,
         }
     }
 
@@ -230,7 +288,7 @@ impl RoundManager {
     /// Replica:
     ///
     /// Do nothing
-    async fn process_new_round_event(&mut self, new_round_event: NewRoundEvent) {
+    async fn process_new_round_event(&mut self, new_round_event: NewRoundEvent, start_time: Option<Instant>) {
         debug!("Processing {}", new_round_event);
         counters::CURRENT_ROUND.set(new_round_event.round as i64);
         counters::ROUND_TIMEOUT_MS.set(new_round_event.timeout.as_millis() as i64);
@@ -258,6 +316,18 @@ impl RoundManager {
             }
         };
         let mut network = self.network.clone();
+
+        // JP CODE
+        if let Some(nr_txns) = proposal_msg.proposal().payload() {
+            if let Some(start) = start_time {
+                let duration = start.elapsed();
+                //println!("Time elapsed for process_new_round_event(when this node is the next proposer) is: {:?}", duration);
+                self.metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: format!("{},{:?}", nr_txns.len(), duration.as_micros())}).unwrap_or_else(|error| {
+                    println!("Error: {:?}", error);
+                });
+            }
+        }
+        
         network.broadcast_proposal(proposal_msg).await;
         counters::PROPOSALS_COUNT.inc();
     }
@@ -341,7 +411,7 @@ impl RoundManager {
                 .await?;
 
             // Update safety rules and round_state and potentially start a new round.
-            self.process_certificates().await?;
+            self.process_certificates(None).await?;
         }
         Ok(())
     }
@@ -400,10 +470,17 @@ impl RoundManager {
     /// a timeout.
     /// 2) Otherwise vote for a NIL block and sign a timeout.
     pub async fn process_local_timeout(&mut self, round: Round) -> anyhow::Result<()> {
-        ensure!(
-            self.round_state.process_local_timeout(round),
-            "[RoundManager] local timeout is stale"
-        );
+        // JP CODE
+        let start = Instant::now();
+
+        //ensure!(
+        //    self.round_state.process_local_timeout(round),
+        //    "[RoundManager] local timeout is stale"
+        //);
+
+        if !self.round_state.process_local_timeout(round) {
+            return Ok(());
+        }
 
         let (use_last_vote, mut timeout_vote) = match self.round_state.vote_sent() {
             Some(vote) if vote.vote_data().proposed().round() == round => (true, vote),
@@ -435,19 +512,27 @@ impl RoundManager {
 
         self.round_state.record_vote(timeout_vote.clone());
         let timeout_vote_msg = VoteMsg::new(timeout_vote, self.block_store.sync_info());
+
+        // JP CODE
+        let duration = start.elapsed();
+        //println!("Time elapsed for timeout_vote_after_local_timeout is: {:?}", duration);
+        self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: format!("{:?}", duration.as_micros())}).unwrap_or_else(|error| {
+            println!("Error: {:?}", error);
+        });
+
         self.network.broadcast_vote(timeout_vote_msg).await;
         Ok(())
     }
 
     /// This function is called only after all the dependencies of the given QC have been retrieved.
-    async fn process_certificates(&mut self) -> anyhow::Result<()> {
+    async fn process_certificates(&mut self, start: Option<Instant>) -> anyhow::Result<()> {
         let sync_info = self.block_store.sync_info();
         self.safety_rules.update(sync_info.highest_quorum_cert())?;
         let consensus_state = self.safety_rules.consensus_state()?;
         counters::PREFERRED_BLOCK_ROUND.set(consensus_state.preferred_round() as i64);
 
         if let Some(new_round_event) = self.round_state.process_certificates(sync_info) {
-            self.process_new_round_event(new_round_event).await;
+            self.process_new_round_event(new_round_event, start).await;
         }
         Ok(())
     }
@@ -459,6 +544,13 @@ impl RoundManager {
     /// 4. In case a validator chooses to vote, send the vote to the representatives at the next
     /// round.
     async fn process_proposal(&mut self, proposal: Block) -> Result<()> {
+        // JP CODE
+        let mut nr_txns = 0;
+        let start = Instant::now();
+        if let Some(payload) = &proposal.payload() {
+            nr_txns = payload.len();
+        }
+
         ensure!(
             self.proposer_election.is_valid_proposal(&proposal),
             "[RoundManager] Proposer {} for block {} is not a valid proposer for this round",
@@ -498,6 +590,15 @@ impl RoundManager {
 
         self.round_state.record_vote(vote.clone());
         let vote_msg = VoteMsg::new(vote, self.block_store.sync_info());
+
+        // JP CODE
+        let duration = start.elapsed();
+        //println!("Time elapsed for process_proposal is: {:?}", duration);
+        let msg = format!("{},{:?}", nr_txns, duration.as_micros());
+        self.metric_sender_jp.try_send(JPsenderStruct {to_file: 2, message: msg}).unwrap_or_else(|error| {
+            println!("Error: {:?}", error);
+        });  
+
         self.network.send_vote(vote_msg, vec![recipients]).await;
         Ok(())
     }
@@ -598,6 +699,10 @@ impl RoundManager {
     /// 1) fetch missing dependencies if required, and then
     /// 2) call process_certificates(), which will start a new round in return.
     async fn process_vote(&mut self, vote: &Vote) -> anyhow::Result<()> {
+        // JP CODE
+        // Add this to the process_new_round_event() method?
+        let start = Instant::now();
+
         if !vote.is_timeout() {
             // Unlike timeout votes regular votes are sent to the leaders of the next round only.
             let next_round = vote.vote_data().proposed().round() + 1;
@@ -634,9 +739,9 @@ impl RoundManager {
                     counters::CREATION_TO_QC_S.observe_duration(time_to_qc);
                 }
 
-                self.new_qc_aggregated(qc, vote.author()).await
+                self.new_qc_aggregated(qc, vote.author(), start).await
             }
-            VoteReceptionResult::NewTimeoutCertificate(tc) => self.new_tc_aggregated(tc).await,
+            VoteReceptionResult::NewTimeoutCertificate(tc) => self.new_tc_aggregated(tc, start).await,
             _ => Ok(()),
         }
     }
@@ -645,21 +750,22 @@ impl RoundManager {
         &mut self,
         qc: Arc<QuorumCert>,
         preferred_peer: Author,
+        start: Instant,
     ) -> anyhow::Result<()> {
         self.block_store
             .insert_quorum_cert(&qc, &mut self.create_block_retriever(preferred_peer))
             .await
             .context("[RoundManager] Failed to process a newly aggregated QC")?;
-        self.process_certificates().await
+        self.process_certificates(Some(start)).await
     }
 
-    async fn new_tc_aggregated(&mut self, tc: Arc<TimeoutCertificate>) -> anyhow::Result<()> {
+    async fn new_tc_aggregated(&mut self, tc: Arc<TimeoutCertificate>, start: Instant) -> anyhow::Result<()> {
         self.block_store
             .insert_timeout_certificate(tc.clone())
             .context("[RoundManager] Failed to process a newly aggregated TC")?;
 
         // Process local highest qc should be no-op
-        self.process_certificates().await
+        self.process_certificates(Some(start)).await
     }
 
     /// Retrieve a n chained blocks from the block store starting from
@@ -672,6 +778,9 @@ impl RoundManager {
         &self,
         request: IncomingBlockRetrievalRequest,
     ) -> anyhow::Result<()> {
+        // JP CODE
+        let start = Instant::now();
+
         let mut blocks = vec![];
         let mut status = BlockRetrievalStatus::Succeeded;
         let mut id = request.req.block_id();
@@ -690,6 +799,13 @@ impl RoundManager {
         }
 
         let response = Box::new(BlockRetrievalResponse::new(status, blocks));
+
+        // JP CODE
+        let duration = start.elapsed();
+        self.metric_sender_jp.clone().try_send(JPsenderStruct {to_file: 3, message: format!("{},{:?}", request.req.num_blocks(), duration.as_micros())}).unwrap_or_else(|error| {
+            println!("Error: {:?}", error);
+        });
+
         lcs::to_bytes(&ConsensusMsg::BlockRetrievalResponse(response))
             .and_then(|bytes| {
                 request
@@ -709,7 +825,7 @@ impl RoundManager {
         if let Some(vote) = last_vote_sent {
             self.round_state.record_vote(vote);
         }
-        self.process_new_round_event(new_round_event).await;
+        self.process_new_round_event(new_round_event, None).await;
     }
 
     /// Inspect the current consensus state.

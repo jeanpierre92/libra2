@@ -35,6 +35,16 @@ use std::{
 use tokio::{runtime::Handle, time::interval};
 use vm_validator::vm_validator::TransactionValidation;
 
+// JP CODE
+use std::io::{prelude::*, BufWriter};
+use std::{fs, thread, path::Path, fs::OpenOptions, time::SystemTime};
+use futures::{channel::mpsc::{channel, Sender, Receiver}};
+
+pub struct JPsenderStruct {
+    pub to_file: i32,
+    pub message: String,
+}
+
 /// Coordinator that handles inbound network events and outbound txn broadcasts.
 pub(crate) async fn coordinator<V>(
     mut smp: SharedMempool<V>,
@@ -65,7 +75,49 @@ pub(crate) async fn coordinator<V>(
     let workers_available = smp.config.shared_mempool_max_concurrent_inbound_syncs;
     let bounded_executor = BoundedExecutor::new(workers_available, executor.clone());
 
+    // JP CODE
+    let (tx, mut rx): (Sender<JPsenderStruct>, Receiver<JPsenderStruct>) = channel(1024);
+    fs::create_dir_all("/jp_metrics").unwrap();
+
+    thread::spawn(move || {
+        let paths = vec!["jp_mempool_process_incoming_transactions.csv", "jp_ac_client_transaction.csv"];
+        let mut buf = vec![];
+
+        for i in 0..paths.len() {
+            let buf_handle = BufWriter::new(OpenOptions::new()
+            .write(true)
+            .read(true)
+            .append(true)
+            .create(true)
+            .open(Path::new(&format!("jp_metrics/{}", paths.get(i).unwrap())))
+            .expect("Cannot open file!"));
+            buf.push(buf_handle);
+        }
+
+        loop {
+            let received = rx.try_next();
+            match received {
+                Ok(raw_msg) => if let Some(mut msg) = raw_msg {
+                    msg.message.push('\n');
+                    match msg.to_file {
+                        0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_mempool_process_incomming_tranactions.csv"),
+                        1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_ac_client_transaction.csv"),
+                        _ => panic!("shittt"),
+                    }
+                },
+                Err(_) => {
+                    for i in 0..buf.len() {
+                        buf[i].flush().unwrap();
+                    }
+                    thread::sleep(std::time::Duration::from_millis(100));
+                },
+            }
+        } 
+    });
+
+    let mut current_time;
     loop {
+        current_time = SystemTime::now();
         ::futures::select! {
             (mut msg, callback) = client_events.select_next_some() => {
                 trace_event!("mempool::client_event", {"txn", msg.sender(), msg.sequence_number()});
@@ -74,6 +126,8 @@ pub(crate) async fn coordinator<V>(
                     smp.clone(),
                     msg,
                     callback,
+                    tx.clone(),
+                    current_time,
                 ))
                 .await;
             },
@@ -136,7 +190,8 @@ pub(crate) async fn coordinator<V>(
                                                 transactions,
                                                 request_id,
                                                 timeline_state,
-                                                peer
+                                                peer,
+                                                tx.clone()
                                             ))
                                             .await;
                                     }

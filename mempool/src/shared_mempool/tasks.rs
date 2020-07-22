@@ -37,6 +37,10 @@ use std::{
 use tokio::runtime::Handle;
 use vm_validator::vm_validator::{get_account_sequence_number, TransactionValidation};
 
+// JP CODE
+use futures::{channel::mpsc::Sender};
+use super::coordinator::JPsenderStruct;
+
 // ============================== //
 //  broadcast_coordinator tasks  //
 // ============================== //
@@ -204,11 +208,20 @@ pub(crate) async fn process_client_transaction_submission<V>(
     smp: SharedMempool<V>,
     transaction: SignedTransaction,
     callback: oneshot::Sender<Result<SubmissionStatus>>,
+    jp_sender: Sender<JPsenderStruct>,
+    curr_time: SystemTime,
 ) where
     V: TransactionValidation,
 {
+    // JP CODE
+    let now = curr_time.duration_since(UNIX_EPOCH).expect("Time?").as_millis();
+    let msg = format!("{:?},{},{}", transaction.sender(), transaction.sequence_number(), now);
+    jp_sender.clone().try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
+        println!("Error: {:?}", error);
+    });
+
     let mut statuses =
-        process_incoming_transactions(&smp, vec![transaction], TimelineState::NotReady).await;
+        process_incoming_transactions(&smp, vec![transaction], TimelineState::NotReady, jp_sender).await;
     log_txn_process_results(&statuses, None);
     let status;
     if statuses.is_empty() {
@@ -233,10 +246,11 @@ pub(crate) async fn process_transaction_broadcast<V>(
     request_id: String,
     timeline_state: TimelineState,
     peer: PeerNetworkId,
+    jp_sender: Sender<JPsenderStruct>,
 ) where
     V: TransactionValidation,
 {
-    let results = process_incoming_transactions(&smp, transactions, timeline_state).await;
+    let results = process_incoming_transactions(&smp, transactions, timeline_state, jp_sender).await;
     log_txn_process_results(&results, Some(peer.peer_id()));
     // send back ACK
     let ack_response = gen_ack_response(request_id, results);
@@ -287,10 +301,15 @@ async fn process_incoming_transactions<V>(
     smp: &SharedMempool<V>,
     transactions: Vec<SignedTransaction>,
     timeline_state: TimelineState,
+    mut jp_sender: Sender<JPsenderStruct>,
 ) -> Vec<SubmissionStatus>
 where
     V: TransactionValidation,
 {
+    // JP CODE
+    let start = Instant::now();
+    let nr_txns = &transactions.len();
+
     let mut statuses = vec![];
 
     let seq_numbers = transactions
@@ -367,6 +386,14 @@ where
             }
         }
     }
+
+    // JP CODE
+    let duration = start.elapsed();
+    //println!("Time elapsed for process_mempool_txns with {} txns is: {:?}", nr_txns, duration);
+    jp_sender.try_send(JPsenderStruct {to_file: 0, message: format!("{},{:?}", nr_txns, duration.as_micros())}).unwrap_or_else(|error| {
+        println!("Error: {:?}", error);
+    }); 
+
     notify_subscribers(SharedMempoolNotification::NewTransactions, &smp.subscribers);
     statuses
 }
