@@ -244,7 +244,7 @@ impl RoundManager {
                             0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
                             1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_local_timeout.csv"),
                             2 => buf[2].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_proposal.csv"),
-                            3 => buf[2].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_block_retrieval.csv"),
+                            3 => buf[3].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_block_retrieval.csv"),
                             _ => panic!("Unknown file to log to"),
                         }
                     },
@@ -411,7 +411,7 @@ impl RoundManager {
                 .await?;
 
             // Update safety rules and round_state and potentially start a new round.
-            self.process_certificates(None).await?;
+            self.process_certificates().await?;
         }
         Ok(())
     }
@@ -525,14 +525,18 @@ impl RoundManager {
     }
 
     /// This function is called only after all the dependencies of the given QC have been retrieved.
-    async fn process_certificates(&mut self, start: Option<Instant>) -> anyhow::Result<()> {
+    async fn process_certificates(&mut self) -> anyhow::Result<()> {
+        // JP CODE
+        // Add this to the process_new_round_event() method?
+        let start = Instant::now();
+
         let sync_info = self.block_store.sync_info();
         self.safety_rules.update(sync_info.highest_quorum_cert())?;
         let consensus_state = self.safety_rules.consensus_state()?;
         counters::PREFERRED_BLOCK_ROUND.set(consensus_state.preferred_round() as i64);
 
         if let Some(new_round_event) = self.round_state.process_certificates(sync_info) {
-            self.process_new_round_event(new_round_event, start).await;
+            self.process_new_round_event(new_round_event, Some(start)).await;
         }
         Ok(())
     }
@@ -699,10 +703,6 @@ impl RoundManager {
     /// 1) fetch missing dependencies if required, and then
     /// 2) call process_certificates(), which will start a new round in return.
     async fn process_vote(&mut self, vote: &Vote) -> anyhow::Result<()> {
-        // JP CODE
-        // Add this to the process_new_round_event() method?
-        let start = Instant::now();
-
         if !vote.is_timeout() {
             // Unlike timeout votes regular votes are sent to the leaders of the next round only.
             let next_round = vote.vote_data().proposed().round() + 1;
@@ -738,11 +738,12 @@ impl RoundManager {
                 }) {
                     counters::CREATION_TO_QC_S.observe_duration(time_to_qc);
                 }
-
-                self.new_qc_aggregated(qc, vote.author(), start).await
+                self.new_qc_aggregated(qc, vote.author()).await
             }
-            VoteReceptionResult::NewTimeoutCertificate(tc) => self.new_tc_aggregated(tc, start).await,
-            _ => Ok(()),
+            VoteReceptionResult::NewTimeoutCertificate(tc) => {
+                self.new_tc_aggregated(tc).await
+            }
+            _ => Ok(())
         }
     }
 
@@ -750,22 +751,21 @@ impl RoundManager {
         &mut self,
         qc: Arc<QuorumCert>,
         preferred_peer: Author,
-        start: Instant,
     ) -> anyhow::Result<()> {
         self.block_store
             .insert_quorum_cert(&qc, &mut self.create_block_retriever(preferred_peer))
             .await
             .context("[RoundManager] Failed to process a newly aggregated QC")?;
-        self.process_certificates(Some(start)).await
+        self.process_certificates().await
     }
 
-    async fn new_tc_aggregated(&mut self, tc: Arc<TimeoutCertificate>, start: Instant) -> anyhow::Result<()> {
+    async fn new_tc_aggregated(&mut self, tc: Arc<TimeoutCertificate>) -> anyhow::Result<()> {
         self.block_store
             .insert_timeout_certificate(tc.clone())
             .context("[RoundManager] Failed to process a newly aggregated TC")?;
 
         // Process local highest qc should be no-op
-        self.process_certificates(Some(start)).await
+        self.process_certificates().await
     }
 
     /// Retrieve a n chained blocks from the block store starting from

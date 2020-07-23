@@ -80,7 +80,9 @@ pub(crate) async fn coordinator<V>(
     fs::create_dir_all("/jp_metrics").unwrap();
 
     thread::spawn(move || {
-        let paths = vec!["jp_mempool_process_incoming_transactions.csv", "jp_ac_client_transaction.csv"];
+        let paths = vec!["jp_mempool_process_incoming_transactions.csv",
+                         "jp_ac_client_transaction.csv"];
+                         
         let mut buf = vec![];
 
         for i in 0..paths.len() {

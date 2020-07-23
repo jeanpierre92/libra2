@@ -91,3 +91,5 @@ do
         $command
     done
 done
+
+echo ${containers[@]} > containers_id.txt

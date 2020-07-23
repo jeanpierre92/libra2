@@ -215,7 +215,7 @@ pub(crate) async fn process_client_transaction_submission<V>(
 {
     // JP CODE
     let now = curr_time.duration_since(UNIX_EPOCH).expect("Time?").as_millis();
-    let msg = format!("{:?},{},{}", transaction.sender(), transaction.sequence_number(), now);
+    let msg = format!("{:?},{},{}", transaction.sender().short_str(), transaction.sequence_number(), now);
     jp_sender.clone().try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
         println!("Error: {:?}", error);
     });

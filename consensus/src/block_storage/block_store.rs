@@ -57,16 +57,15 @@ fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>],
         if let Some(payload) = block.payload() {
             let nr_txns = payload.len();
             if nr_txns > 0 {
-                let mut msg = format!("{:?}[", block_time);
+                let mut msg = format!("{:?},", block_time);
                 for transaction in payload {
-                    msg.push_str(&format!("({:?},{}),", transaction.sender(), transaction.sequence_number()));
+                    msg.push_str(&format!("{:?};{},", transaction.sender().short_str(), transaction.sequence_number()));
                 }
                 if let Some(last_char) = msg.pop() {
                     if last_char != ',' {
                         msg.push(last_char);
                     }
                 }
-                msg.push_str("]");
                 metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: msg}).unwrap_or_else(|error| {
                     println!("Error: {:?}", error);
                 });  
