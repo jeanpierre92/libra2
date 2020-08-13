@@ -54,6 +54,7 @@ pub struct EmitJob {
     workers: Vec<Worker>,
     stop: Arc<AtomicBool>,
     stats: Arc<StatsAccumulator>,
+    pub jp_wait_time: Arc<AtomicU64>,
 }
 
 #[derive(Default)]
@@ -186,11 +187,16 @@ impl TxEmitter {
         );
         self.mint_accounts(&req, num_accounts).await?;
         let all_accounts = self.accounts.split_off(self.accounts.len() - num_accounts);
+        println!("JP: num_accounts: {}, all_accounts.len(): {}", num_accounts, all_accounts.len());
         let mut workers = vec![];
         let all_addresses: Vec<_> = all_accounts.iter().map(|d| d.address).collect();
         let all_addresses = Arc::new(all_addresses);
         let mut all_accounts = all_accounts.into_iter();
         let stop = Arc::new(AtomicBool::new(false));
+
+        
+        let jp_wait_time = Arc::new(AtomicU64::new(req.thread_params.wait_millis));
+
         let stats = Arc::new(StatsAccumulator::default());
         let tokio_handle = Handle::current();
         for instance in &req.instances {
@@ -199,6 +205,7 @@ impl TxEmitter {
                 let accounts = (&mut all_accounts).take(req.accounts_per_client).collect();
                 let all_addresses = all_addresses.clone();
                 let stop = stop.clone();
+                let jp_wait_time = jp_wait_time.clone();
                 let params = req.thread_params.clone();
                 let stats = Arc::clone(&stats);
                 let worker = SubmissionWorker {
@@ -208,6 +215,7 @@ impl TxEmitter {
                     stop,
                     params,
                     stats,
+                    jp_wait_time,
                 };
                 let join_handle = tokio_handle.spawn(worker.run().boxed());
                 workers.push(Worker { join_handle });
@@ -218,6 +226,7 @@ impl TxEmitter {
             workers,
             stop,
             stats,
+            jp_wait_time,
         })
     }
 
@@ -354,6 +363,7 @@ struct SubmissionWorker {
     stop: Arc<AtomicBool>,
     params: EmitThreadParams,
     stats: Arc<StatsAccumulator>,
+    jp_wait_time: Arc<AtomicU64>,
 }
 
 impl SubmissionWorker {
@@ -367,7 +377,8 @@ impl SubmissionWorker {
             let mut tx_offset_time = 0u64;
             for request in requests {
                 let cur_time = Instant::now();
-                let wait_util = cur_time + wait;
+                //JP CODE
+                let wait_util = cur_time + Duration::from_millis(self.jp_wait_time.load(Ordering::Relaxed));
                 tx_offset_time += (cur_time - start_time).as_millis() as u64;
                 self.stats.submitted.fetch_add(1, Ordering::Relaxed);
                 let resp = self.client.submit_transaction(request).await;
@@ -433,6 +444,7 @@ impl SubmissionWorker {
             .accounts
             .iter_mut()
             .choose_multiple(&mut rng, batch_size);
+
         let mut requests = Vec::with_capacity(accounts.len());
         for sender in accounts {
             let receiver = self

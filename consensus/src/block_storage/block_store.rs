@@ -59,7 +59,7 @@ fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>],
             if nr_txns > 0 {
                 let mut msg = format!("{:?},", block_time);
                 for transaction in payload {
-                    msg.push_str(&format!("{:?};{},", transaction.sender().short_str(), transaction.sequence_number()));
+                    msg.push_str(&format!("{:?}:{},", transaction.sender().short_str(), transaction.sequence_number()));
                 }
                 if let Some(last_char) = msg.pop() {
                     if last_char != ',' {

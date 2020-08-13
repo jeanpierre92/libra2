@@ -5,6 +5,7 @@ use std::{
     collections::HashSet,
     env, process,
     time::{Duration, Instant},
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
 };
 
 use libra_logger::{info, warn};
@@ -295,6 +296,7 @@ pub async fn emit_tx(
     duration: Duration,
 ) {
     let mut emitter = TxEmitter::new(cluster);
+    let mut thread_params_jp = thread_params.wait_millis;
     let job = emitter
         .start_job(EmitJobRequest {
             instances: cluster.validator_instances().to_vec(),
@@ -305,18 +307,23 @@ pub async fn emit_tx(
         .await
         .expect("Failed to start emit job");
     let deadline = Instant::now() + duration;
-    let mut prev_stats: Option<TxStats> = None;
+    //let mut prev_stats: Option<TxStats> = None;
+    //JP CODE
     while Instant::now() < deadline {
         let window = Duration::from_secs(10);
         tokio::time::delay_for(window).await;
-        let stats = emitter.peek_job_stats(&job);
-        let delta = &stats - &prev_stats.unwrap_or_default();
-        prev_stats = Some(stats);
-        println!("{}", delta.rate(window));
+        job.jp_wait_time.store(thread_params_jp, Ordering::Relaxed);
+        if thread_params_jp > 1 {
+            thread_params_jp -= 1;
+        }
+        //let stats = emitter.peek_job_stats(&job);
+        //let delta = &stats - &prev_stats.unwrap_or_default();
+        //prev_stats = Some(stats);
+        //println!("{}", delta.rate(window));
     }
     let stats = emitter.stop_job(job).await;
     println!("Total stats: {}", stats);
-    println!("Average rate: {}", stats.rate(duration));
+    //println!("Average rate: {}", stats.rate(duration));
 }
 
 fn run_health_check(
