@@ -105,6 +105,7 @@ pub struct EmitJobRequest {
     pub accounts_per_client: usize,
     pub workers_per_ac: Option<usize>,
     pub thread_params: EmitThreadParams,
+    pub worker_wait_time_start: f64,
 }
 
 impl EmitJobRequest {
@@ -122,6 +123,7 @@ impl EmitJobRequest {
                 accounts_per_client: 15,
                 workers_per_ac: None,
                 thread_params: EmitThreadParams::default(),
+                worker_wait_time_start: 100.0,
             },
         }
     }
@@ -194,8 +196,8 @@ impl TxEmitter {
         let mut all_accounts = all_accounts.into_iter();
         let stop = Arc::new(AtomicBool::new(false));
 
-        
-        let jp_wait_time = Arc::new(AtomicU64::new(req.thread_params.wait_millis));
+        // JP CODE
+        let jp_wait_time = Arc::new(AtomicU64::new(req.worker_wait_time_start as u64));
 
         let stats = Arc::new(StatsAccumulator::default());
         let tokio_handle = Handle::current();
@@ -375,20 +377,28 @@ impl SubmissionWorker {
             let num_requests = requests.len();
             let start_time = Instant::now();
             let mut tx_offset_time = 0u64;
+            // JP CODE
+            let cur_time = Instant::now();
+            let wait_util = cur_time + Duration::from_micros(self.jp_wait_time.load(Ordering::Relaxed));
             for request in requests {
-                let cur_time = Instant::now();
+                //let cur_time = Instant::now();
                 //JP CODE
-                let wait_util = cur_time + Duration::from_millis(self.jp_wait_time.load(Ordering::Relaxed));
-                tx_offset_time += (cur_time - start_time).as_millis() as u64;
+                //let wait_util = cur_time + Duration::from_millis(self.jp_wait_time.load(Ordering::Relaxed));
+                //tx_offset_time += (cur_time - start_time).as_millis() as u64;
                 self.stats.submitted.fetch_add(1, Ordering::Relaxed);
                 let resp = self.client.submit_transaction(request).await;
                 if let Err(e) = resp {
                     warn!("[{:?}] Failed to submit request: {:?}", self.client, e);
                 }
-                let now = Instant::now();
-                if wait_util > now {
-                    time::delay_for(wait_util - now).await;
-                }
+                //let now = Instant::now();
+                //if wait_util > now {
+                //    time::delay_for(wait_util - now).await;
+                //}
+            }
+            // JP CODE
+            let now = Instant::now();
+            if wait_util > now {
+                time::delay_for(wait_util - now).await;
             }
             if self.params.wait_committed {
                 if let Err(uncommitted) =

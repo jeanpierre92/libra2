@@ -16,7 +16,7 @@ use std::convert::TryInto;
 #[derive(Clone)]
 pub struct Cluster {
     // guaranteed non-empty
-    validator_instances: Vec<Instance>,
+    pub validator_instances: Vec<Instance>,
     fullnode_instances: Vec<Instance>,
     mint_key_pair: KeyPair<Ed25519PrivateKey, Ed25519PublicKey>,
 }
