@@ -19,6 +19,7 @@ for ((node=1; node<$nodes; node++)); do
         -e CFG_NODE_INDEX=$node \
         -e CFG_NUM_VALIDATORS="$nodes" \
         -e CFG_SEED_PEER_IP="$bootstrap" \
+        -e CFG_OVERRIDES="shared_mempool_tick_interval_ms=50" \
         --ip $node_ip \
         --network testnet \
         --publish 808$node:8080 \
@@ -32,6 +33,7 @@ docker run \
     -e CFG_NODE_INDEX="0" \
     -e CFG_NUM_VALIDATORS="$nodes" \
     -e CFG_SEED_PEER_IP="$bootstrap" \
+    -e CFG_OVERRIDES="shared_mempool_tick_interval_ms=50" \
     --ip $bootstrap \
     --network testnet \
     --publish 8000:8000 \

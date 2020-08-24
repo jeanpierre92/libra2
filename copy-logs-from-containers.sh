@@ -1,6 +1,19 @@
 #!/bin/bash
+
+#Arg0 = logs destination location on host (eg: "/home/jeanpierre/LibraMetrics/containersMetricsFiles")
+#Arg1 = 0:Keep the individual container files
+#       1:Delete container logs and only keep the logs
+
+if [ "$#" -ne 2 ]
+then
+    echo "ABORTING: this script expects 2 arguments!"
+    echo "eg: /home/jeanpierre/LibraMetrics/containersMetricsFiles 1"
+    echo "meaning, copy logs to that location and only keep the merged folder"
+    exit 1
+fi
+
 container_log_location="/jp_metrics"
-host_directory="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
+host_directory=$1
 files_to_merge=("jp_ac_client_transaction.csv"
                 "jp_consensus_process_new_round.csv"
                 "jp_consensus_process_proposal.csv"
@@ -9,7 +22,14 @@ files_to_merge=("jp_ac_client_transaction.csv"
                 "jp_consensus_process_local_timeout.csv")
 
 declare -a containers=($(cat containers_id.txt))
-echo "Copying from ${#containers[@]} containers..."
+if [ $? -eq 0 ]
+then
+    echo "Copying from ${#containers[@]} containers..."
+else
+    echo "ABORTING: Could not retrieve the containers_id's from containers_id.txt"
+    echo "Make sure that containers_id.txt is present in the current folder"
+    exit 1
+fi
 
 today=`date '+%Y_%m_%d__%H_%M_%S'`;
 dir="$host_directory/$today"
@@ -41,3 +61,15 @@ for (( j=0; j<${#files_to_merge[@]}; j++ ))
 do
     merge_log "${files_to_merge[$j]}"
 done
+
+#Move jp_blockstore_process_block.csv to the merged folder
+cp $dir/"container0/jp_blockstore_process_block.csv" $dir/"merged"
+
+#Delete the container files if this is specified in the arguments
+if [ $2 -eq 1 ]
+then
+    for (( i=0; i<${#containers[@]}; i++ ))
+    do
+        rm -rf $dir/"container$i"
+    done
+fi
