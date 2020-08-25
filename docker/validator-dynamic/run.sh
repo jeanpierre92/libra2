@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 set -ex
 
-image="${1:-libra_validator_dynamic:latest}"
-nodes="4"
+image="${3:-libra_validator_dynamic:latest}"
+nodes="$1"
 base_ip="172.18.0"
 ip_offset="10"
 bootstrap="$base_ip.$ip_offset"
@@ -12,6 +12,7 @@ bootstrap="$base_ip.$ip_offset"
 docker network create --subnet 172.18.0.0/24 testnet || true
 
 for ((node=1; node<$nodes; node++)); do
+    nodes_port=$(( 8080 + $node ))
     nodes_ip_offset="$(expr $ip_offset + $node)"
     node_ip="$base_ip.$nodes_ip_offset"
     docker run \
@@ -19,10 +20,10 @@ for ((node=1; node<$nodes; node++)); do
         -e CFG_NODE_INDEX=$node \
         -e CFG_NUM_VALIDATORS="$nodes" \
         -e CFG_SEED_PEER_IP="$bootstrap" \
-        -e CFG_OVERRIDES="shared_mempool_tick_interval_ms=50" \
+        -e CFG_OVERRIDES="$2" \
         --ip $node_ip \
         --network testnet \
-        --publish 808$node:8080 \
+        --publish $nodes_port:8080 \
         --detach \
         --cap-add=NET_ADMIN \
         "$image"
@@ -33,7 +34,7 @@ docker run \
     -e CFG_NODE_INDEX="0" \
     -e CFG_NUM_VALIDATORS="$nodes" \
     -e CFG_SEED_PEER_IP="$bootstrap" \
-    -e CFG_OVERRIDES="shared_mempool_tick_interval_ms=50" \
+    -e CFG_OVERRIDES="$2" \
     --ip $bootstrap \
     --network testnet \
     --publish 8000:8000 \

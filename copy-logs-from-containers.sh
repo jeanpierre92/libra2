@@ -42,8 +42,8 @@ do
 done
 
 mkdir -p $dir/"merged/"
-#merges files from n-containers row by row
-#thereby removing any empty lines
+#Merges files from n-containers row by row
+#and removing any empty lines
 function merge_log {
     declare -a logs
     for (( i=0; i<${#containers[@]}; i++ ))

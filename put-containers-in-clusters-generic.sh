@@ -9,7 +9,7 @@
 
 #Parse the arguments
 #Put the nodes in clusters
-IFS=','
+IFS=$','
 read -a param1 <<< $1
 read -a param2 <<< $2
 read -a param3 <<< $3
@@ -51,7 +51,7 @@ declare -A clusters_pings
 #(10 30 40)
 #(30 15 50)
 #(40 50 12)
-IFS=':'
+IFS=$':'
 for (( i=0; i<${#param3[@]}; i++ ))
 do
     read -a cluster_delay <<< ${param3[i]}
@@ -61,8 +61,7 @@ do
     done
 done
 
-exit 1
-
+IFS=$'\n'
 declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
 
 if [ $nodes -ne ${#containers[@]} ]
@@ -86,6 +85,7 @@ then
     exit 1
 fi
 
+IFS=$' '
 for (( i=0; i<$nodes; i++ ))
 do
     #Delete any existent traffic shaping rules
