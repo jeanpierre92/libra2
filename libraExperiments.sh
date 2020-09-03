@@ -22,7 +22,10 @@ function set_default_parameters() {
     step_size_throughput="10"
     step_size_duration="10"
 
-    log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
+    base_directory_jp="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
+    base_directory_azure="/datadrive/libra2/experiments_logs"
+    base_directory="$base_directory_azure"
+    log_save_location="$base_directory"
     only_keep_merged_logs="1"
 }
 set_default_parameters
@@ -220,7 +223,7 @@ function experiment_1() {
             nodes=${num_nodes[$i_counter]}
             cluster_config="$nodes 500 50"
             throughput=${start_throughput[$i_counter]}
-            log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment1/${num_nodes[$i_counter]}_nodes"
+            log_save_location="$base_directory/Experiment1/${num_nodes[$i_counter]}_nodes"
 
             start_experiment
             while [ $? != "0" ]
@@ -248,7 +251,7 @@ function experiment_2() {
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             cluster_config="$num_nodes 500 ${delays[$i_counter]}"
-            log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment2/${delays[$i_counter]}_delay"
+            log_save_location="$base_directory/Experiment2/${delays[$i_counter]}_delay"
 
             start_experiment
             while [ $? != "0" ]
@@ -277,7 +280,7 @@ function experiment_3() {
         do
             cluster_config="$num_nodes ${bandwidth[$j_counter]} 50"
             throughput=$start_throughput
-            log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment3/${bandwidth[$i_counter]}_bandwidth"
+            log_save_location="$base_directory/Experiment3/${bandwidth[$i_counter]}_bandwidth"
 
             start_experiment
             while [ $? != "0" ]
@@ -305,7 +308,7 @@ function experiment_4() {
         do
             cluster_config="$num_nodes 500 50"
             throughput=$start_throughput
-            log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment4/${tick_interval[$i_counter]}_tick_interval"
+            log_save_location="$base_directory/Experiment4/${tick_interval[$i_counter]}_tick_interval"
             cfg_override_params="capacity_per_user=1000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
 
             start_experiment
@@ -317,33 +320,33 @@ function experiment_4() {
     done
 }
 
-#experiment_1
-#exit(0)
-
-for (( i_counter=3; i_counter<=3; i_counter++ ))
-do
-    nodes=$i_counter
-    #tick_interval=$((50 + $i_counter * 50))
-    #tick_interval="50"
-    #cfg_override_params="shared_mempool_tick_interval_ms=$tick_interval"
-    cfg_override_params="capacity_per_user=10000"
-    #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
-    cluster_config="$nodes 500 50"
-
-    throughput="500"
-    duration="300"
-    step_size_throughput="10"
-    step_size_duration="1"
-
-    log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
-
-    sleep 2
-
-    start_experiment
-    while [ $? != "0" ]
+function test_experiment() {
+    for (( i_counter=3; i_counter<=3; i_counter++ ))
     do
-        start_experiment
-    done
-done
+        nodes=$i_counter
+        #tick_interval=$((50 + $i_counter * 50))
+        #tick_interval="50"
+        #cfg_override_params="shared_mempool_tick_interval_ms=$tick_interval"
+        cfg_override_params="capacity_per_user=10000"
+        #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
+        cluster_config="$nodes 500 50"
 
+        throughput="500"
+        duration="300"
+        step_size_throughput="10"
+        step_size_duration="1"
+
+        log_save_location="$base_directory"
+
+        sleep 2
+
+        start_experiment
+        while [ $? != "0" ]
+        do
+            start_experiment
+        done
+    done
+}
+
+experiment_1
 echo "Experiments finished!"
