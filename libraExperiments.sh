@@ -15,8 +15,8 @@ function set_default_parameters() {
     cfg_override_params=""
     cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
 
-    workers_per_account="1"
-    accounts_per_client="10"
+    workers_per_account="3"
+    accounts_per_client="50"
     throughput="300"
     duration="60"
     step_size_throughput="10"
@@ -206,11 +206,11 @@ function experiment_1() {
     #Data used for calculating the impact the number of nodes has on the maximum throughput.
     num_rounds="1"
     num_nodes=(2 5 8 11 14 17)
-    start_throughput=(1500 1000 900 800 700 600)
+    start_throughput=(500 400 300 200 100 100)
 
     cfg_override_params="capacity_per_user=1000"
     duration="600"
-    step_size_throughput="2"
+    step_size_throughput="5"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#num_nodes[@]}; i_counter++ ));
@@ -220,7 +220,7 @@ function experiment_1() {
             nodes=${num_nodes[$i_counter]}
             cluster_config="$nodes 500 50"
             throughput=${start_throughput[$i_counter]}
-            log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment1/part1/${num_nodes[$i_counter]}_nodes"
+            log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment1/${num_nodes[$i_counter]}_nodes"
 
             start_experiment
             while [ $? != "0" ]
@@ -236,19 +236,18 @@ function experiment_2() {
     num_rounds="5"
     num_nodes="4"
     delays=(10 30 50 70 90 110 130 150)
-    start_throughput="1500"
+    throughput="500"
     
     cfg_override_params="capacity_per_user=1000"
-    duration="300"
-    step_size_throughput="0"
-    step_size_duration="0"
+    duration="600"
+    step_size_throughput="3"
+    step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             cluster_config="$num_nodes 500 ${delays[$i_counter]}"
-            throughput=$start_throughput
             log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles/Experiment2/${delays[$i_counter]}_delay"
 
             start_experiment
@@ -265,12 +264,12 @@ function experiment_3() {
     num_rounds="5"
     num_nodes="4"
     bandwidth=(10 30 50 70 90 110 130 150 170 190 210 230 250)
-    start_throughput="1500"
+    start_throughput="500"
     
     cfg_override_params="capacity_per_user=1000"
-    duration="300"
-    step_size_throughput="0"
-    step_size_duration="0"
+    duration="600"
+    step_size_throughput="3"
+    step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#bandwidth[@]}; i_counter++ ));
     do
@@ -318,8 +317,8 @@ function experiment_4() {
     done
 }
 
-experiment_1
-exit(0)
+#experiment_1
+#exit(0)
 
 for (( i_counter=3; i_counter<=3; i_counter++ ))
 do
@@ -327,11 +326,13 @@ do
     #tick_interval=$((50 + $i_counter * 50))
     #tick_interval="50"
     #cfg_override_params="shared_mempool_tick_interval_ms=$tick_interval"
-    cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
+    cfg_override_params="capacity_per_user=10000"
+    #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
+    cluster_config="$nodes 500 50"
 
-    throughput="10"
-    duration="600"
-    step_size_throughput="1"
+    throughput="500"
+    duration="300"
+    step_size_throughput="10"
     step_size_duration="1"
 
     log_save_location="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
