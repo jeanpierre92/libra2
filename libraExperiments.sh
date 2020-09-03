@@ -12,7 +12,7 @@
 
 function set_default_parameters() {
     nodes="4"
-    cfg_override_params=""
+    cfg_override_params="capacity_per_user=10000"
     cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
 
     workers_per_account="3"
@@ -217,7 +217,7 @@ function experiment_1() {
     num_nodes=(2 5 8 11 14 17)
     start_throughput=(500 400 300 200 100 100)
 
-    cfg_override_params="capacity_per_user=1000"
+    cfg_override_params="capacity_per_user=10000"
     duration="600"
     step_size_throughput="5"
     step_size_duration="1"
@@ -247,7 +247,7 @@ function experiment_2() {
     delays=(10 30 50 70 90 110 130 150)
     throughput="500"
     
-    cfg_override_params="capacity_per_user=1000"
+    cfg_override_params="capacity_per_user=10000"
     duration="600"
     step_size_throughput="3"
     step_size_duration="1"
@@ -275,7 +275,7 @@ function experiment_3() {
     bandwidth=(10 30 50 70 90 110 130 150 170 190 210 230 250)
     start_throughput="500"
     
-    cfg_override_params="capacity_per_user=1000"
+    cfg_override_params="capacity_per_user=10000"
     duration="600"
     step_size_throughput="3"
     step_size_duration="1"
@@ -302,8 +302,8 @@ function experiment_4() {
     num_rounds="5"
     num_nodes="4"
     tick_interval=(50 100 150 200)
+
     start_throughput="50"
-    
     duration="800"
     step_size_throughput="1"
     step_size_duration="1"
@@ -315,7 +315,7 @@ function experiment_4() {
             cluster_config="$num_nodes 500 50"
             throughput=$start_throughput
             log_save_location="$base_directory/Experiment4/${tick_interval[$i_counter]}_tick_interval"
-            cfg_override_params="capacity_per_user=1000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
+            cfg_override_params="capacity_per_user=10000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
 
             start_experiment
             while [ $? != "0" ]
