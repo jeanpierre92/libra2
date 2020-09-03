@@ -22,11 +22,17 @@ function set_default_parameters() {
     step_size_throughput="10"
     step_size_duration="10"
 
+    only_keep_merged_logs="1"
+
     base_directory_jp="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
     base_directory_azure="/datadrive/libra2/experiments_logs"
     base_directory="$base_directory_azure"
     log_save_location="$base_directory"
-    only_keep_merged_logs="1"
+    
+    mint_file_location_jp="$HOME/libra2/libra2/mint.key"
+    mint_file_location_azure="/datadrive/libra2/mint.key"
+    mint_file_location="$mint_file_location_azure"
+    
 }
 set_default_parameters
 
@@ -56,7 +62,7 @@ function get_nodes_ips_ports() {
 #This function runs untill Libra is healthy and accepts txns
 function wait_for_libra_to_be_ready() {
     cargo run -p cluster-test -- \
-    --mint-file "$HOME/libra2/libra2/mint.key" \
+    --mint-file "$mint_file_location" \
     --swarm \
     --peers $(get_nodes_ips_ports) \
     --diag
@@ -74,7 +80,7 @@ function wait_for_libra_to_be_ready() {
         fi
         sleep 5
         cargo run -p cluster-test -- \
-        --mint-file "$HOME/libra2/libra2/mint.key" \
+        --mint-file "$mint_file_location" \
         --swarm \
         --peers $(get_nodes_ips_ports) \
         --diag
