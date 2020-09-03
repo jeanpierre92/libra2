@@ -28,7 +28,7 @@ function set_default_parameters() {
     base_directory_azure="/datadrive/libra2/experiments_logs"
     base_directory="$base_directory_azure"
     log_save_location="$base_directory"
-    
+
     mint_file_location_jp="$HOME/libra2/libra2/mint.key"
     mint_file_location_azure="/datadrive/libra2/mint.key"
     mint_file_location="$mint_file_location_azure"
@@ -168,7 +168,7 @@ function put_nodes_into_clusters() {
 #Starts the txns generator
 function start_txns_generator() {
     cargo run -p cluster-test -- \
-    --mint-file "$HOME/libra2/libra2/mint.key" \
+    --mint-file "$mint_file_location" \
     --swarm \
     --peers $(get_nodes_ips_ports) \
     --emit-tx \
