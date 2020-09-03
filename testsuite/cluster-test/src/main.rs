@@ -7,7 +7,6 @@ use std::{
     time::{Duration, Instant},
     sync::atomic::{Ordering},
 };
-use std::convert::TryFrom;
 
 use libra_logger::{info, warn};
 use reqwest::Url;
@@ -27,7 +26,7 @@ use cluster_test::{
     report::SuiteReport,
     slack::SlackClient,
     suite::ExperimentSuite,
-    tx_emitter::{AccountData, EmitJobRequest, EmitThreadParams, TxEmitter, TxStats},
+    tx_emitter::{AccountData, EmitJobRequest, EmitThreadParams, TxEmitter},
 };
 use futures::{
     future::{join_all, FutureExt},

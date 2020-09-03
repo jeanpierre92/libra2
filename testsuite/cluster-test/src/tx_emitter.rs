@@ -371,12 +371,12 @@ struct SubmissionWorker {
 impl SubmissionWorker {
     #[allow(clippy::collapsible_if)]
     async fn run(mut self) -> Vec<AccountData> {
-        let wait = Duration::from_millis(self.params.wait_millis);
+        let _wait = Duration::from_millis(self.params.wait_millis);
         while !self.stop.load(Ordering::Relaxed) {
             let requests = self.gen_requests();
             let num_requests = requests.len();
             let start_time = Instant::now();
-            let mut tx_offset_time = 0u64;
+            let tx_offset_time = 0u64;
             // JP CODE
             let cur_time = Instant::now();
             let wait_util = cur_time + Duration::from_micros(self.jp_wait_time.load(Ordering::Relaxed));
