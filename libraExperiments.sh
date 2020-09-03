@@ -163,6 +163,11 @@ function get_pings_between_clusters_2() {
 #Put nodes into clusters based on $cluster_config
 function put_nodes_into_clusters() {
     source put-containers-in-clusters-generic.sh $cluster_config
+    if [ $? != "0" ]
+    then
+        stop_libra_and_delete_containers
+        return 1
+    fi
 }
 
 #Starts the txns generator
@@ -200,6 +205,10 @@ function start_experiment() {
     start_libra
     sleep 10
     put_nodes_into_clusters
+    if [ $? != "0" ]
+    then
+        return 1
+    fi
     wait_for_libra_to_be_ready
     if [ $? != "0" ]
     then

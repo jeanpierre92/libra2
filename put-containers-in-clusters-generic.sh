@@ -62,14 +62,21 @@ do
 done
 
 IFS=$'\n'
+counter=0
 declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
-
-if [ $nodes -ne ${#containers[@]} ]
-then
+while [ $nodes -ne ${#containers[@]} ]
+do
+    if [ $counter -gt 5]
+    then
+        echo "ERROR: $nodes node(s) are specified, but ${#containers[@]} node(s) are running"
+        echo "EXIT program"
+        exit 1
+    fi
     echo "ERROR: $nodes node(s) are specified, but ${#containers[@]} node(s) are running"
-    echo "EXIT program"
-    exit 1
-fi
+    sleep 5
+    containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
+    counter=$((counter+1))
+done
 
 if [ ${#clusters_nodes[@]} -ne $nodes ]
 then
