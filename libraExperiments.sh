@@ -228,7 +228,7 @@ function experiment_1() {
 
     cfg_override_params="capacity_per_user=10000"
     duration="600"
-    step_size_throughput="5"
+    step_size_throughput="2"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#num_nodes[@]}; i_counter++ ));
@@ -251,14 +251,14 @@ function experiment_1() {
 
 function experiment_2() {
     #Data used for finding out how network delays impact the throughput and transaction delay
-    num_rounds="5"
+    num_rounds="1"
     num_nodes="4"
     delays=(10 30 50 70 90 110 130 150)
     throughput="500"
     
     cfg_override_params="capacity_per_user=10000"
     duration="600"
-    step_size_throughput="3"
+    step_size_throughput="2"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
@@ -279,14 +279,14 @@ function experiment_2() {
 
 function experiment_3() {
     #Data used for finding out how bandwidth affects the transaction throughput
-    num_rounds="5"
+    num_rounds="1"
     num_nodes="4"
     bandwidth=(10 30 50 70 90 110 130 150 170 190 210 230 250)
     start_throughput="500"
     
     cfg_override_params="capacity_per_user=10000"
     duration="600"
-    step_size_throughput="3"
+    step_size_throughput="2"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#bandwidth[@]}; i_counter++ ));
@@ -308,7 +308,7 @@ function experiment_3() {
 
 function experiment_4() {
     #Data used for calibrating the Libra simulator
-    num_rounds="5"
+    num_rounds="1"
     num_nodes="4"
     tick_interval=(50 100 150 200)
 
