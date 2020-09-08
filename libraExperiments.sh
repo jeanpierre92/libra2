@@ -203,7 +203,7 @@ function stop_libra_and_delete_containers() {
 #Specify the order of a single experiment
 function start_experiment() {
     start_libra
-    sleep 10
+    sleep 20
     put_nodes_into_clusters
     if [ $? != "0" ]
     then
@@ -227,7 +227,7 @@ function experiment_1() {
     start_throughput=(500 400 300 200 100 100)
 
     cfg_override_params="capacity_per_user=10000"
-    duration="600"
+    duration="60"
     step_size_throughput="2"
     step_size_duration="1"
 
