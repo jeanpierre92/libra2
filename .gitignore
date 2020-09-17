@@ -44,3 +44,10 @@ language/tools/vm-genesis/genesis/vm_config.toml
 # Move Build Output
 move_build_output/
 containers_id.txt
+.ipynb_checkpoints/libraCalcPerformance-checkpoint.ipynb
+.ipynb_checkpoints/libraFitModels-checkpoint.ipynb
+.ipynb_checkpoints/Untitled-checkpoint.ipynb
+.ipynb_checkpoints/visualizeData-checkpoint.ipynb
+.vscode/settings.json
+libraFitModels.ipynb
+visualizeData.ipynb

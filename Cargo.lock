@@ -831,6 +831,7 @@ dependencies = [
  "state-synchronizer 0.1.0",
  "storage-interface 0.1.0",
  "subscription-service 0.1.0",
+ "sysinfo 0.15.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "tempfile 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "termion 1.5.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "thiserror 1.0.20 (registry+https://github.com/rust-lang/crates.io-index)",
