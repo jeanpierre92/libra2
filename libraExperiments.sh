@@ -25,7 +25,7 @@ function set_default_parameters() {
 
     only_keep_merged_logs="1"
 
-    experiment_location="server"
+    experiment_location="jp"
 
     if [ "$experiment_location" = "jp" ]
     then
@@ -322,19 +322,19 @@ function experiment_4() {
     #Data used for calibrating the Libra simulator
     num_rounds="1"
     nodes="6"
-    tick_interval=(250)
+    tick_interval=(150)
 
     start_throughput="300"
-    duration="5000"
-    step_size_throughput="1"
+    duration="60"
+    step_size_throughput="10"
     step_size_duration="1"
-    max_cpu_usage="70"
+    max_cpu_usage="99"
 
     for (( i_counter=0; i_counter<${#tick_interval[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes 500 200"
+            cluster_config="$nodes 500 50"
             throughput="$start_throughput"
             log_save_location="$base_directory/Experiment4/${tick_interval[$i_counter]}_tick_interval"
             cfg_override_params="capacity_per_user=10000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
@@ -376,7 +376,5 @@ function test_experiment() {
     done
 }
 
-experiment_1
-experiment_2
-experiment_3
+experiment_4
 echo "Experiments finished!"
