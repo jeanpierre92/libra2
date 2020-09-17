@@ -27,22 +27,18 @@ function set_default_parameters() {
 
     experiment_location="server"
 
-    if [ experiment_location = "jp"]
+    if [ "$experiment_location" = "jp" ]
     then
-        base_directory_jp="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
-        base_directory="$base_directory_jp"
+        base_directory="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
         log_save_location="$base_directory"
 
-        mint_file_location_jp="$HOME/libra2/libra2/mint.key"
-        mint_file_location="$mint_file_location_jp"
-    elif [ experiment_location = "server" ]
+        mint_file_location="$HOME/libra2/libra2/mint.key"
+    elif [ "$experiment_location" = "server" ]
     then
-        base_directory_azure="/datadrive/libra2/experiments_logs"
-        base_directory="$base_directory_azure"
+        base_directory="/datadrive/libra2/experiments_logs"
         log_save_location="$base_directory"
 
-        mint_file_location_azure="/datadrive/libra2/mint.key"
-        mint_file_location="$mint_file_location_azure"
+        mint_file_location="/datadrive/libra2/mint.key"
     fi 
 }
 set_default_parameters
