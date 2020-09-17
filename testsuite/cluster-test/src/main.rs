@@ -37,6 +37,8 @@ use libra_config::config::DEFAULT_JSON_RPC_PORT;
 use std::cmp::min;
 use tokio::time::{delay_for, delay_until, Instant as TokioInstant};
 
+use sysinfo::{ProcessorExt, System, SystemExt};
+
 const HEALTH_POLL_INTERVAL: Duration = Duration::from_secs(5);
 
 #[derive(StructOpt, Debug)]
@@ -88,6 +90,8 @@ struct Args {
     step_size_throughput: usize,
     #[structopt(long, default_value = "10")]
     step_size_duration: u64,
+    #[structopt(long, default_value = "0")]
+    max_cpu_usage: usize,
     #[structopt(long)]
     burst: bool,
     #[structopt(long, default_value = "mint.key")]
@@ -123,6 +127,7 @@ pub struct JpStruct {
     throughput: usize,
     step_size_throughput: usize,
     step_size_duration: u64,
+    max_cpu_usage: usize,
 }
 
 #[tokio::main]
@@ -150,6 +155,7 @@ pub async fn main() {
             throughput: args.throughput,
             step_size_throughput: args.step_size_throughput,
             step_size_duration: args.step_size_duration,
+            max_cpu_usage: args.max_cpu_usage,
         };
         if args.swarm {
             let util = BasicSwarmUtil::setup(&args);
@@ -333,12 +339,24 @@ pub async fn emit_tx(
     let deadline = Instant::now() + duration;
     //let mut prev_stats: Option<TxStats> = None;
     //JP CODE
+    let mut system = System::new_all();
+    system.refresh_cpu();
+    let mut cpu_usage = system.get_global_processor_info().get_cpu_usage();
+    println!("CPU usage: {}%", cpu_usage);
+    
     while Instant::now() < deadline {
         let window = Duration::from_secs(jp_struct.step_size_duration);
         let worker_wait_time = (accounts_per_client as f64 / jp_struct.throughput as f64) * (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64) * 1_000_000.;
         job.jp_wait_time.store(worker_wait_time as u64, Ordering::Relaxed);
         tokio::time::delay_for(window).await;
-        jp_struct.throughput += jp_struct.step_size_throughput;
+
+        system.refresh_cpu();
+        cpu_usage = system.get_global_processor_info().get_cpu_usage();
+        println!("CPU usage: {}%", cpu_usage);
+        if jp_struct.max_cpu_usage == 0 || cpu_usage < jp_struct.max_cpu_usage as f32 {
+            jp_struct.throughput += jp_struct.step_size_throughput;
+        }
+        
         //let stats = emitter.peek_job_stats(&job);
         //let delta = &stats - &prev_stats.unwrap_or_default();
         //prev_stats = Some(stats);

@@ -66,7 +66,7 @@ counter=0
 declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
 while [ $nodes -ne ${#containers[@]} ]
 do
-    if [ $counter -gt 5]
+    if [ $counter -gt 5 ]
     then
         echo "ERROR: $nodes node(s) are specified, but ${#containers[@]} node(s) are running"
         echo "EXIT program"

@@ -21,18 +21,29 @@ function set_default_parameters() {
     duration="60"
     step_size_throughput="10"
     step_size_duration="10"
+    max_cpu_usage="0"
 
     only_keep_merged_logs="1"
 
-    base_directory_jp="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
-    base_directory_azure="/datadrive/libra2/experiments_logs"
-    base_directory="$base_directory_azure"
-    log_save_location="$base_directory"
+    experiment_location="server"
 
-    mint_file_location_jp="$HOME/libra2/libra2/mint.key"
-    mint_file_location_azure="/datadrive/libra2/mint.key"
-    mint_file_location="$mint_file_location_azure"
-    
+    if [ experiment_location = "jp"]
+    then
+        base_directory_jp="/home/jeanpierre/LibraMetrics/containersMetricsFiles"
+        base_directory="$base_directory_jp"
+        log_save_location="$base_directory"
+
+        mint_file_location_jp="$HOME/libra2/libra2/mint.key"
+        mint_file_location="$mint_file_location_jp"
+    elif [ experiment_location = "server" ]
+    then
+        base_directory_azure="/datadrive/libra2/experiments_logs"
+        base_directory="$base_directory_azure"
+        log_save_location="$base_directory"
+
+        mint_file_location_azure="/datadrive/libra2/mint.key"
+        mint_file_location="$mint_file_location_azure"
+    fi 
 }
 set_default_parameters
 
@@ -182,6 +193,7 @@ function start_txns_generator() {
     --burst \
     --throughput $throughput \
     --duration $duration \
+    --max-cpu-usage $max_cpu_usage \
     --step-size-throughput $step_size_throughput \
     --step-size-duration $step_size_duration
 }
@@ -203,7 +215,7 @@ function stop_libra_and_delete_containers() {
 #Specify the order of a single experiment
 function start_experiment() {
     start_libra
-    sleep 20
+    sleep $(($nodes*3))
     put_nodes_into_clusters
     if [ $? != "0" ]
     then
@@ -223,8 +235,10 @@ function start_experiment() {
 function experiment_1() {
     #Data used for calculating the impact the number of nodes has on the maximum throughput.
     num_rounds="1"
-    num_nodes=(2 5 8 11 14 17)
-    start_throughput=(500 400 300 200 100 100)
+    #num_nodes=(2 5 8 11 14 17)
+    num_nodes=(2 5)
+    #start_throughput=(500 400 300 200 100 100)
+    start_throughput=(500 400)
 
     cfg_override_params="capacity_per_user=10000"
     duration="60"
@@ -252,12 +266,13 @@ function experiment_1() {
 function experiment_2() {
     #Data used for finding out how network delays impact the throughput and transaction delay
     num_rounds="1"
-    num_nodes="4"
-    delays=(10 30 50 70 90 110 130 150)
+    nodes="5"
+    #delays=(10 30 50 70 90 110 130 150)
+    delays=(10 150)
     throughput="500"
     
     cfg_override_params="capacity_per_user=10000"
-    duration="600"
+    duration="60"
     step_size_throughput="2"
     step_size_duration="1"
 
@@ -265,7 +280,7 @@ function experiment_2() {
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$num_nodes 500 ${delays[$i_counter]}"
+            cluster_config="$nodes 500 ${delays[$i_counter]}"
             log_save_location="$base_directory/Experiment2/${delays[$i_counter]}_delay"
 
             start_experiment
@@ -280,12 +295,13 @@ function experiment_2() {
 function experiment_3() {
     #Data used for finding out how bandwidth affects the transaction throughput
     num_rounds="1"
-    num_nodes="4"
+    nodes="5"
     bandwidth=(10 30 50 70 90 110 130 150 170 190 210 230 250)
-    start_throughput="500"
+    bandwidth=(10 150)
+    start_throughput="400"
     
     cfg_override_params="capacity_per_user=10000"
-    duration="600"
+    duration="60"
     step_size_throughput="2"
     step_size_duration="1"
 
@@ -293,7 +309,7 @@ function experiment_3() {
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$num_nodes ${bandwidth[$j_counter]} 50"
+            cluster_config="$nodes ${bandwidth[$j_counter]} 50"
             throughput=$start_throughput
             log_save_location="$base_directory/Experiment3/${bandwidth[$i_counter]}_bandwidth"
 
@@ -309,20 +325,21 @@ function experiment_3() {
 function experiment_4() {
     #Data used for calibrating the Libra simulator
     num_rounds="1"
-    num_nodes="4"
-    tick_interval=(50 100 150 200)
+    nodes="6"
+    tick_interval=(250)
 
-    start_throughput="50"
-    duration="800"
+    start_throughput="300"
+    duration="5000"
     step_size_throughput="1"
     step_size_duration="1"
+    max_cpu_usage="70"
 
     for (( i_counter=0; i_counter<${#tick_interval[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$num_nodes 500 50"
-            throughput=$start_throughput
+            cluster_config="$nodes 500 200"
+            throughput="$start_throughput"
             log_save_location="$base_directory/Experiment4/${tick_interval[$i_counter]}_tick_interval"
             cfg_override_params="capacity_per_user=10000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
 
@@ -364,4 +381,6 @@ function test_experiment() {
 }
 
 experiment_1
+experiment_2
+experiment_3
 echo "Experiments finished!"
