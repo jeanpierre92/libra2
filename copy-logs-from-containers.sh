@@ -62,8 +62,9 @@ do
     merge_log "${files_to_merge[$j]}"
 done
 
-#Move jp_blockstore_process_block.csv to the merged folder
+#Move logs that do not require merging
 cp $dir/"container0/jp_blockstore_process_block.csv" $dir/"merged"
+cp $dir/"container0/jp_cpu_load.csv" $dir/"merged"
 
 #Delete the container files if this is specified in the arguments
 if [ $2 -eq 1 ]

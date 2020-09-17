@@ -37,6 +37,7 @@ use libra_config::config::DEFAULT_JSON_RPC_PORT;
 use std::cmp::min;
 use tokio::time::{delay_for, delay_until, Instant as TokioInstant};
 
+// JP CODE
 use sysinfo::{ProcessorExt, System, SystemExt};
 
 const HEALTH_POLL_INTERVAL: Duration = Duration::from_secs(5);
@@ -339,7 +340,7 @@ pub async fn emit_tx(
     let deadline = Instant::now() + duration;
     //let mut prev_stats: Option<TxStats> = None;
     //JP CODE
-    let mut system = System::new_all();
+    let mut system = System::new();
     system.refresh_cpu();
     let mut cpu_usage = system.get_global_processor_info().get_cpu_usage();
     println!("CPU usage: {}%", cpu_usage);

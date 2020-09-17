@@ -34,6 +34,7 @@ use termion::color::*;
 use std::io::{prelude::*, BufWriter};
 use std::{fs, thread, path::Path, fs::OpenOptions, time::{SystemTime, UNIX_EPOCH}};
 use futures::{channel::mpsc::{channel, Sender, Receiver}};
+use sysinfo::{ProcessorExt, System, SystemExt};
 
 #[cfg(test)]
 #[path = "block_store_test.rs"]
@@ -146,7 +147,7 @@ impl BlockStore {
         fs::create_dir_all("/jp_metrics").unwrap();
 
         thread::spawn(move || {
-            let paths = vec!["jp_blockstore_process_block.csv"];
+            let paths = vec!["jp_blockstore_process_block.csv", "jp_cpu_load.csv"];
             let mut buf = vec![];
 
             for i in 0..paths.len() {
@@ -160,6 +161,9 @@ impl BlockStore {
                 buf.push(buf_handle);
             }
 
+            let mut system = System::new();
+            system.refresh_cpu();
+            let mut counter = 0;
             loop {
                 let received = rx.try_next();
                 match received {
@@ -174,6 +178,16 @@ impl BlockStore {
                         for i in 0..buf.len() {
                             buf[i].flush().unwrap();
                         }
+
+                        if counter % 10 == 0 {
+                            system.refresh_cpu();
+                            let cpu_usage = system.get_global_processor_info().get_cpu_usage();
+
+                            let mut msg = cpu_usage.to_string();
+                            msg.push('\n');
+                            buf[1].write_all(&msg.as_bytes()).expect("Could not write to jp_cpu_load.csv");
+                        }
+                        counter += 1;
                         thread::sleep(std::time::Duration::from_millis(100));
                     },
                 }
