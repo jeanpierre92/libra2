@@ -48,6 +48,7 @@ set_default_parameters
 #Start Libra
 function start_libra() {
     ./docker/validator-dynamic/run.sh $nodes $cfg_override_params $image_node0 $image_node1 &
+}
 
 #Returns a list of $ip:$port with length $nodes
 #Eg: "localhost:8080,localhost:8081", when $nodes=2
@@ -240,7 +241,7 @@ function experiment_1() {
     start_throughput=(500 400)
 
     cfg_override_params="capacity_per_user=10000"
-    duration="60"
+    duration="10"
     step_size_throughput="2"
     step_size_duration="1"
 
@@ -385,5 +386,5 @@ function test_experiment() {
     done
 }
 
-experiment_4
+experiment_1
 echo "Experiments finished!"
