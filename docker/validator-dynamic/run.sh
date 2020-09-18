@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 set -ex
 
-image1="${3:-libra_validator_dynamic:latest}"
-image2="${4:-libra_validator_dynamic:latest}"
+image_node0="${3:-libra_validator_dynamic:latest}"
+image_node1="${4:-libra_validator_dynamic:latest}"
 nodes="$1"
 base_ip="172.18.0"
 ip_offset="10"
@@ -27,7 +27,7 @@ for ((node=1; node<$nodes; node++)); do
         --publish $nodes_port:8080 \
         --detach \
         --cap-add=NET_ADMIN \
-        "$image1"
+        "$image_node1"
 done
 
 docker run \
@@ -43,4 +43,4 @@ docker run \
     --publish 9101:9101 \
     --publish 9102:9102 \
     --cap-add=NET_ADMIN \
-    "$image2"
+    "$image_node0"

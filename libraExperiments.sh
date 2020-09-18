@@ -12,7 +12,8 @@
 
 function set_default_parameters() {
     nodes="4"
-    image="libra_validator_dynamic:latest"
+    image_node0="libra_validator_dynamic_perf_node0:latest"
+    image_node1="libra_validator_dynamic_perf_node1:latest"
     cfg_override_params="capacity_per_user=10000"
     cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
 
@@ -46,7 +47,7 @@ set_default_parameters
 
 #Start Libra
 function start_libra() {
-    ./docker/validator-dynamic/run.sh $nodes $cfg_override_params $image &
+    ./docker/validator-dynamic/run.sh $nodes $cfg_override_params $image_node0 $image_node1 &
 }
 
 #Returns a list of $ip:$port with length $nodes

@@ -64,8 +64,9 @@ done
 IFS=$'\n'
 counter=0
 declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
-declare -a containers_2=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
-containers=(${containers[@]} ${containers_2[@]})
+declare -a containers_1=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
+declare -a containers_2=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node1" -q))
+containers=(${containers[@]} ${containers_1[@]} ${containers_2[@]})
 #echo ${containers[@]}
 while [ $nodes -ne ${#containers[@]} ]
 do
@@ -78,6 +79,8 @@ do
     echo "ERROR: $nodes node(s) are specified, but ${#containers[@]} node(s) are running"
     sleep 5
     containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
+    containers=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
+    containers=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node1" -q))
     counter=$((counter+1))
 done
 

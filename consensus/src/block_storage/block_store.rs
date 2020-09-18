@@ -37,12 +37,6 @@ mod block_store_test;
 #[path = "sync_manager.rs"]
 pub mod sync_manager;
 
-// JP CODE
-pub struct JPsenderStruct {
-    to_file: i32,
-    message: String,
-}
-
 fn update_counters_for_committed_blocks(blocks_to_commit: &[Arc<ExecutedBlock>]) {
     for block in blocks_to_commit {
         if let Some(time_to_commit) =
