@@ -12,6 +12,8 @@
 
 function set_default_parameters() {
     nodes="4"
+    image_node0="libra_validator_dynamic:latest"
+    image_node1="libra_validator_dynamic:latest"
     cfg_override_params="capacity_per_user=10000"
     cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
 
@@ -45,8 +47,7 @@ set_default_parameters
 
 #Start Libra
 function start_libra() {
-    ./docker/validator-dynamic/run.sh $nodes $cfg_override_params &
-}
+    ./docker/validator-dynamic/run.sh $nodes $cfg_override_params $image_node0 $image_node1 &
 
 #Returns a list of $ip:$port with length $nodes
 #Eg: "localhost:8080,localhost:8081", when $nodes=2
@@ -233,6 +234,8 @@ function experiment_1() {
     num_rounds="1"
     #num_nodes=(2 5 8 11 14 17)
     num_nodes=(2 5)
+    image_node0="libra_validator_dynamic_perf_node0:latest"
+    image_node1="libra_validator_dynamic_perf_node1:latest"
     #start_throughput=(500 400 300 200 100 100)
     start_throughput=(500 400)
 
@@ -263,6 +266,8 @@ function experiment_2() {
     #Data used for finding out how network delays impact the throughput and transaction delay
     num_rounds="1"
     nodes="5"
+    image_node0="libra_validator_dynamic_perf_node0:latest"
+    image_node1="libra_validator_dynamic_perf_node1:latest"
     #delays=(10 30 50 70 90 110 130 150)
     delays=(10 150)
     throughput="500"
@@ -292,6 +297,8 @@ function experiment_3() {
     #Data used for finding out how bandwidth affects the transaction throughput
     num_rounds="1"
     nodes="5"
+    image_node0="libra_validator_dynamic_perf_node0:latest"
+    image_node1="libra_validator_dynamic_perf_node1:latest"
     bandwidth=(10 30 50 70 90 110 130 150 170 190 210 230 250)
     bandwidth=(10 150)
     start_throughput="400"
@@ -322,6 +329,8 @@ function experiment_4() {
     #Data used for calibrating the Libra simulator
     num_rounds="1"
     nodes="6"
+    image_node0="libra_validator_dynamic:latest"
+    image_node1="libra_validator_dynamic:latest"
     tick_interval=(150)
 
     start_throughput="300"
