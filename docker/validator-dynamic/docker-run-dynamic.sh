@@ -75,4 +75,6 @@ if [ -n "${CFG_OVERRIDES}" ]; then
   done
 fi
 
-exec /opt/libra/bin/libra-node -f /opt/libra/etc/node.config.toml
+# JP CODE
+# Removed the default libra logger to use my own
+exec /opt/libra/bin/libra-node --no-logging -f /opt/libra/etc/node.config.toml
