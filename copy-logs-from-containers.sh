@@ -17,9 +17,7 @@ host_directory=$1
 files_to_merge=("jp_ac_client_transaction.csv"
                 "jp_consensus_process_new_round.csv"
                 "jp_consensus_process_proposal.csv"
-                "jp_mempool_process_incoming_transactions.csv"
-                "jp_consensus_process_block_retrieval.csv"
-                "jp_consensus_process_local_timeout.csv")
+                "jp_mempool_process_incoming_transactions.csv")
 
 declare -a containers=($(cat containers_id.txt))
 if [ $? -eq 0 ]

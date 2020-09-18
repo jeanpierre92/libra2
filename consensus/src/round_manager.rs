@@ -218,9 +218,7 @@ impl RoundManager {
 
         thread::spawn(move || {
             let paths = vec!["jp_consensus_process_new_round.csv", 
-                             "jp_consensus_process_local_timeout.csv", 
-                             "jp_consensus_process_proposal.csv", 
-                             "jp_consensus_process_block_retrieval.csv"];
+                             "jp_consensus_process_proposal.csv"];
 
             let mut buf = vec![];
 
@@ -242,9 +240,7 @@ impl RoundManager {
                         msg.message.push('\n');
                         match msg.to_file {
                             0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
-                            1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_local_timeout.csv"),
-                            2 => buf[2].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_proposal.csv"),
-                            3 => buf[3].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_block_retrieval.csv"),
+                            1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_proposal.csv"),
                             _ => panic!("Unknown file to log to"),
                         }
                     },
@@ -471,9 +467,6 @@ impl RoundManager {
     /// a timeout.
     /// 2) Otherwise vote for a NIL block and sign a timeout.
     pub async fn process_local_timeout(&mut self, round: Round) -> anyhow::Result<()> {
-        // JP CODE
-        let start = Instant::now();
-
         // Remove these annoying messages
         //ensure!(
         //    self.round_state.process_local_timeout(round),
@@ -514,13 +507,6 @@ impl RoundManager {
 
         self.round_state.record_vote(timeout_vote.clone());
         let timeout_vote_msg = VoteMsg::new(timeout_vote, self.block_store.sync_info());
-
-        // JP CODE
-        let duration = start.elapsed();
-        //println!("Time elapsed for timeout_vote_after_local_timeout is: {:?}", duration);
-        self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: format!("{:?}", duration.as_micros())}).unwrap_or_else(|error| {
-            println!("Error: {:?}", error);
-        });
 
         self.network.broadcast_vote(timeout_vote_msg).await;
         Ok(())
@@ -601,7 +587,7 @@ impl RoundManager {
         let duration = start.elapsed();
         //println!("Time elapsed for process_proposal is: {:?}", duration);
         let msg = format!("{},{:?}", nr_txns, duration.as_micros());
-        self.metric_sender_jp.try_send(JPsenderStruct {to_file: 2, message: msg}).unwrap_or_else(|error| {
+        self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
             println!("Error: {:?}", error);
         });  
 
@@ -780,9 +766,6 @@ impl RoundManager {
         &self,
         request: IncomingBlockRetrievalRequest,
     ) -> anyhow::Result<()> {
-        // JP CODE
-        let start = Instant::now();
-
         let mut blocks = vec![];
         let mut status = BlockRetrievalStatus::Succeeded;
         let mut id = request.req.block_id();
@@ -801,12 +784,6 @@ impl RoundManager {
         }
 
         let response = Box::new(BlockRetrievalResponse::new(status, blocks));
-
-        // JP CODE
-        let duration = start.elapsed();
-        self.metric_sender_jp.clone().try_send(JPsenderStruct {to_file: 3, message: format!("{},{:?}", request.req.num_blocks(), duration.as_micros())}).unwrap_or_else(|error| {
-            println!("Error: {:?}", error);
-        });
 
         lcs::to_bytes(&ConsensusMsg::BlockRetrievalResponse(response))
             .and_then(|bytes| {
