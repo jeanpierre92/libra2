@@ -80,6 +80,9 @@ function wait_for_libra_to_be_ready() {
     do
         IFS=$'\n'
         declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
+        declare -a containers_1=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
+        declare -a containers_2=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node1" -q))
+        containers=(${containers[@]} ${containers_1[@]} ${containers_2[@]})
         IFS=$' '
         if [ ${#containers[@]} != $nodes ]
         then
