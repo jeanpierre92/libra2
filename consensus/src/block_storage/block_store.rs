@@ -179,11 +179,10 @@ impl BlockStore {
                             buf[i].flush().unwrap();
                         }
 
+                        // Log CPU-usage every second
                         if counter % 10 == 0 {
                             system.refresh_cpu();
-                            let cpu_usage = system.get_global_processor_info().get_cpu_usage();
-
-                            let mut msg = cpu_usage.to_string();
+                            let mut msg = system.get_global_processor_info().get_cpu_usage().to_string();
                             msg.push('\n');
                             buf[1].write_all(&msg.as_bytes()).expect("Could not write to jp_cpu_load.csv");
                         }

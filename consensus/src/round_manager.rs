@@ -428,6 +428,7 @@ impl RoundManager {
         author: Author,
         help_remote: bool,
     ) -> anyhow::Result<()> {
+        // Remove message that the round is stale
         //ensure!(
         //    message_round >= self.round_state.current_round(),
         //    "round {} is stale than local {}",
@@ -473,6 +474,7 @@ impl RoundManager {
         // JP CODE
         let start = Instant::now();
 
+        // Remove these annoying messages
         //ensure!(
         //    self.round_state.process_local_timeout(round),
         //    "[RoundManager] local timeout is stale"
