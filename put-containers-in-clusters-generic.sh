@@ -64,6 +64,9 @@ done
 IFS=$'\n'
 counter=0
 declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
+declare -a containers_2=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
+containers=(${containers[@]} ${containers_2[@]})
+#echo ${containers[@]}
 while [ $nodes -ne ${#containers[@]} ]
 do
     if [ $counter -gt 5 ]

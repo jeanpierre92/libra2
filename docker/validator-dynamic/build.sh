@@ -14,4 +14,4 @@ fi
 docker build -f $DIR/../validator/Dockerfile $DIR/../.. --tag libra_e2e --build-arg GIT_REV="$(git rev-parse HEAD)" --build-arg GIT_UPSTREAM="$(git merge-base HEAD origin/master)" --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" $PROXY "$@"
 
 # Build validator_dynamic
-docker build -f $DIR/Dockerfile $DIR/../.. --tag libra_validator_dynamic --build-arg GIT_REV="$(git rev-parse HEAD)" --build-arg GIT_UPSTREAM="$(git merge-base HEAD origin/master)" --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" $PROXY "$@"
+docker build -f $DIR/Dockerfile $DIR/../.. --tag libra_validator_dynamic_perf_node0 --build-arg GIT_REV="$(git rev-parse HEAD)" --build-arg GIT_UPSTREAM="$(git merge-base HEAD origin/master)" --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" $PROXY "$@"
