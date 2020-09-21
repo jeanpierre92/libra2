@@ -5,6 +5,7 @@
 
 #Example inputs:
 #2,3,1 500 10:30:40,30:15:50,40:50:12
+
 #2,3,1 100,200,300,400,500,600 10:30:40,30:15:50,40:50:12
 
 #Parse the arguments
@@ -21,9 +22,9 @@ clusters=${#param1[@]}
 #specify to which cluster each node belongs
 declare -a clusters_nodes
 
-for (( i=0; i<$clusters; i++ ))
+for (( i=1; i<=$clusters; i++ ))
 do
-    for (( j=0; j<${param1[i]}; j++ ))
+    for (( j=0; j<${param1[i-1]}; j++ ))
     do
         clusters_nodes+=($i)
     done
@@ -52,12 +53,12 @@ declare -A clusters_pings
 #(30 15 50)
 #(40 50 12)
 IFS=$':'
-for (( i=0; i<${#param3[@]}; i++ ))
+for (( i=1; i<=${#param3[@]}; i++ ))
 do
-    read -a cluster_delay <<< ${param3[i]}
-    for (( j=0; j<${#cluster_delay[@]}; j++ ))
+    read -a cluster_delay <<< ${param3[i-1]}
+    for (( j=1; j<=${#cluster_delay[@]}; j++ ))
     do
-        clusters_pings+=([${i},${j}]=${cluster_delay[j]})
+        clusters_pings+=([${i},${j}]=${cluster_delay[j-1]})
     done
 done
 
@@ -135,7 +136,7 @@ do
     #Specify the ping to each class(cluster)
     for (( region_id=1; region_id<=$clusters; region_id++ ))
     do
-        cluster_key="${clusters_nodes[$i]},$((region_id-1))"
+        cluster_key="${clusters_nodes[$i]},$((region_id))"
         command="docker exec -it ${containers[$i]} tc qdisc add dev eth0 parent 1:$region_id handle ${region_id}0: netem delay ${clusters_pings[$cluster_key]}ms"
         echo $command
         $command
