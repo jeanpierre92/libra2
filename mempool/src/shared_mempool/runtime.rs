@@ -27,6 +27,11 @@ use storage_interface::DbReader;
 use tokio::runtime::{Builder, Handle, Runtime};
 use vm_validator::vm_validator::{TransactionValidation, VMValidator};
 
+// JP CODE
+use std::{ops::Deref};
+use std::{fs, thread, path::Path, fs::OpenOptions};
+use std::io::{prelude::*, BufWriter};
+
 /// bootstrap of SharedMempool
 /// creates separate Tokio Runtime that runs following routines:
 ///   - outbound_sync_task (task that periodically broadcasts transactions to peers)
@@ -49,6 +54,8 @@ pub(crate) fn start_shared_mempool<V>(
 ) where
     V: TransactionValidation + 'static,
 {
+    let jp_mempool = mempool.clone();
+
     let upstream_config = config.upstream.clone();
     let peer_manager = Arc::new(PeerManager::new(
         upstream_config,
@@ -89,6 +96,27 @@ pub(crate) fn start_shared_mempool<V>(
         mempool,
         config.mempool.system_transaction_gc_interval_ms,
     ));
+
+    // JP CODE
+    fs::create_dir_all("/jp_metrics").unwrap();
+
+    thread::spawn(move || {
+        let mut buf_handle = BufWriter::new(OpenOptions::new()
+        .write(true)
+        .read(true)
+        .append(true)
+        .create(true)
+        .open(Path::new(&format!("jp_metrics/{}", "jp_mempool_size.csv")))
+        .expect("Cannot open file!"));
+
+        loop {
+            let mut msg = jp_mempool.lock().unwrap().deref().transactions.system_ttl_index.size().to_string();
+            msg.push('\n');
+            buf_handle.write_all(msg.as_bytes()).expect("Could not write to jp_mempool_size.csv");
+            buf_handle.flush().unwrap();
+            thread::sleep(std::time::Duration::from_millis(1000));
+        }
+    });
 }
 
 /// method used to bootstrap shared mempool for a node

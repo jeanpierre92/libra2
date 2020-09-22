@@ -37,7 +37,7 @@ pub struct TransactionStore {
     // TTLIndex based on system expiration time
     // we keep it separate from `expiration_time_index` so Mempool can't be clogged
     //  by old transactions even if it hasn't received commit callbacks for a while
-    system_ttl_index: TTLIndex,
+    pub system_ttl_index: TTLIndex,
     timeline_index: TimelineIndex,
     // keeps track of "non-ready" txns (transactions that can't be included in next block)
     parking_lot_index: ParkingLotIndex,

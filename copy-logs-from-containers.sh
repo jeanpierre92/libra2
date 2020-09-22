@@ -63,6 +63,7 @@ done
 #Move logs that do not require merging
 cp $dir/"container0/jp_blockstore_process_block.csv" $dir/"merged"
 cp $dir/"container0/jp_cpu_load.csv" $dir/"merged"
+cp $dir/"container0/jp_mempool_size.csv" $dir/"merged"
 
 #Delete the container files if this is specified in the arguments
 if [ $2 -eq 1 ]
