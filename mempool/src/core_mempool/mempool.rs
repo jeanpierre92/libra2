@@ -28,7 +28,7 @@ use std::{
 
 pub struct Mempool {
     // stores metadata of all transactions in mempool (of all states)
-    transactions: TransactionStore,
+    pub transactions: TransactionStore,
 
     sequence_number_cache: TtlCache<AccountAddress, u64>,
     // temporary DS. TODO: eventually retire it
