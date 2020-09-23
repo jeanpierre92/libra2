@@ -236,16 +236,14 @@ function start_experiment() {
 function experiment_1() {
     #Data used for calculating the impact the number of nodes has on the maximum throughput.
     num_rounds="1"
-    #num_nodes=(2 5 8 11 14 17)
-    num_nodes=(2 5)
+    num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    #start_throughput=(500 400 300 200 100 100)
-    start_throughput=(500 400)
+    start_throughput=(800 750 750 700 700 650 650 600 600 550 550 500 500 450 450 400)
 
     cfg_override_params="capacity_per_user=10000"
-    duration="10"
-    step_size_throughput="2"
+    duration="400"
+    step_size_throughput="1"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#num_nodes[@]}; i_counter++ ));
@@ -272,13 +270,12 @@ function experiment_2() {
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    #delays=(10 30 50 70 90 110 130 150)
-    delays=(10 150)
-    throughput="500"
+    delays=(10 30 50 70 90 110 130 150 200 250 300 400 500)
+    throughput="700"
     
     cfg_override_params="capacity_per_user=10000"
-    duration="60"
-    step_size_throughput="2"
+    duration="400"
+    step_size_throughput="1"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
@@ -303,21 +300,20 @@ function experiment_3() {
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    bandwidth=(10 30 50 70 90 110 130 150 170 190 210 230 250)
-    bandwidth=(10 150)
-    start_throughput="400"
+    bandwidth=(5 10 15 20 30 40 50 100 200 500)
+    #bandwidth=(10 150)
+    throughput="700"
     
     cfg_override_params="capacity_per_user=10000"
-    duration="60"
-    step_size_throughput="2"
+    duration="400"
+    step_size_throughput="1"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#bandwidth[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes ${bandwidth[$j_counter]} 50"
-            throughput=$start_throughput
+            cluster_config="$nodes ${bandwidth[$i_counter]} 50"
             log_save_location="$base_directory/Experiment3/${bandwidth[$i_counter]}_bandwidth"
 
             start_experiment
@@ -330,9 +326,39 @@ function experiment_3() {
 }
 
 function experiment_4() {
+    #Data used for finding out how the maximum blocksize affects the transaction throughput
+    num_rounds="1"
+    nodes="5"
+    image_node0="libra_validator_dynamic_perf_node0:latest"
+    image_node1="libra_validator_dynamic_perf_node1:latest"
+    throughput="700"
+    max_block_size=(100 300 500 700 900 1100 1300 1500 100000)
+    
+    duration="700"
+    step_size_throughput="1"
+    step_size_duration="1"
+
+    for (( i_counter=0; i_counter<${#max_block_size[@]}; i_counter++ ));
+    do
+        for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
+        do
+            cluster_config="$nodes 500 50"
+            log_save_location="$base_directory/Experiment4/${max_block_size[$i_counter]}_blocksize"
+            cfg_override_params="capacity_per_user=10000,max_block_size=${max_block_size[$i_counter]}"
+
+            start_experiment
+            while [ $? != "0" ]
+            do
+                start_experiment
+            done
+        done
+    done
+}
+
+function experiment_5() {
     #Data used for calibrating the Libra simulator
     num_rounds="1"
-    nodes="6"
+    nodes="5"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     tick_interval=(150)
@@ -372,12 +398,12 @@ function test_experiment() {
         #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
         cluster_config="$nodes 500 50"
 
-        throughput="500"
-        duration="300"
+        throughput="2000"
+        duration="60"
         step_size_throughput="10"
         step_size_duration="1"
 
-        log_save_location="$base_directory"
+        log_save_location="$base_directory/Experiment_test"
 
         sleep 2
 
@@ -389,5 +415,5 @@ function test_experiment() {
     done
 }
 
-experiment_1
+test_experiment
 echo "Experiments finished!"
