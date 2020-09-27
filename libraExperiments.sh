@@ -15,7 +15,7 @@ function set_default_parameters() {
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     cfg_override_params="capacity_per_user=10000"
-    cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
+    cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12 10 0 pareto"
 
     workers_per_account="3"
     accounts_per_client="50"
@@ -239,10 +239,13 @@ function experiment_1() {
     num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
+    #Sensing:
     start_throughput=(800 750 750 700 700 650 650 600 600 550 550 500 500 450 450 400)
+    #Constant:
+    #start_throughput=(1200 1100)
 
     cfg_override_params="capacity_per_user=10000"
-    duration="400"
+    duration="600"
     step_size_throughput="1"
     step_size_duration="1"
 
@@ -251,7 +254,7 @@ function experiment_1() {
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             nodes=${num_nodes[$i_counter]}
-            cluster_config="$nodes 500 50"
+            cluster_config="$nodes 500 50 10 0 pareto"
             throughput=${start_throughput[$i_counter]}
             log_save_location="$base_directory/Experiment1/${num_nodes[$i_counter]}_nodes"
 
@@ -282,7 +285,7 @@ function experiment_2() {
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes 500 ${delays[$i_counter]}"
+            cluster_config="$nodes 500 ${delays[$i_counter]} 10 0 pareto"
             log_save_location="$base_directory/Experiment2/${delays[$i_counter]}_delay"
 
             start_experiment
@@ -313,7 +316,7 @@ function experiment_3() {
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes ${bandwidth[$i_counter]} 50"
+            cluster_config="$nodes ${bandwidth[$i_counter]} 50 10 0 pareto"
             log_save_location="$base_directory/Experiment3/${bandwidth[$i_counter]}_bandwidth"
 
             start_experiment
@@ -342,7 +345,7 @@ function experiment_4() {
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes 500 50"
+            cluster_config="$nodes 500 50 10 0 pareto"
             log_save_location="$base_directory/Experiment4/${max_block_size[$i_counter]}_blocksize"
             cfg_override_params="capacity_per_user=10000,max_block_size=${max_block_size[$i_counter]}"
 
@@ -357,23 +360,23 @@ function experiment_4() {
 
 function experiment_5() {
     #Data used for calibrating the Libra simulator
-    num_rounds="1"
-    nodes="5"
+    num_rounds="99"
+    nodes="6"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     tick_interval=(150)
 
-    start_throughput="300"
-    duration="60"
-    step_size_throughput="10"
+    start_throughput="550"
+    duration="3600"
+    step_size_throughput="0"
     step_size_duration="1"
-    max_cpu_usage="99"
+    max_cpu_usage="60"
 
     for (( i_counter=0; i_counter<${#tick_interval[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes 500 50"
+            cluster_config="$nodes 500 50 10 0 pareto"
             throughput="$start_throughput"
             log_save_location="$base_directory/Experiment4/${tick_interval[$i_counter]}_tick_interval"
             cfg_override_params="capacity_per_user=10000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
@@ -396,7 +399,7 @@ function test_experiment() {
         #cfg_override_params="shared_mempool_tick_interval_ms=$tick_interval"
         cfg_override_params="capacity_per_user=10000"
         #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
-        cluster_config="$nodes 500 50"
+        cluster_config="$nodes 500 50 10 0 pareto"
 
         throughput="2000"
         duration="60"
