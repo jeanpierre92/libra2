@@ -14,9 +14,6 @@ IFS=$','
 read -a param1 <<< $1
 read -a param2 <<< $2
 read -a param3 <<< $3
-jitter=$4
-correlation=$5
-distribution=$6
 
 #specify #nodes and #clusters
 nodes="$((${param1[@]/%/+}0))"
@@ -140,7 +137,7 @@ do
     for (( region_id=1; region_id<=$clusters; region_id++ ))
     do
         cluster_key="${clusters_nodes[$i]},$((region_id))"
-        command="docker exec -it ${containers[$i]} tc qdisc add dev eth0 parent 1:$region_id handle ${region_id}0: netem delay ${clusters_pings[$cluster_key]}ms ${jitter}ms ${correlation}% distribution ${distribution}"
+        command="docker exec -it ${containers[$i]} tc qdisc add dev eth0 parent 1:$region_id handle ${region_id}0: netem delay ${clusters_pings[$cluster_key]}ms"
         echo $command
         $command
     done
