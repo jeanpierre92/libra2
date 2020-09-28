@@ -360,26 +360,27 @@ function experiment_4() {
 
 function experiment_5() {
     #Data used for calibrating the Libra simulator
-    num_rounds="99"
-    nodes="6"
+    num_rounds="1"
+    nodes="5"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
-    tick_interval=(150)
+    #ping=(25 250 400)
+    #start_throughput=(300 600 600)
+    ping=(50 100 150 200 250 300 350 400 450)
+    start_throughput=(100 200 300 300 300 300 300 300 300)
+    duration="600"
+    step_size_throughput="1"
+    step_size_duration="2"
+    max_cpu_usage="99"
 
-    start_throughput="550"
-    duration="3600"
-    step_size_throughput="0"
-    step_size_duration="1"
-    max_cpu_usage="60"
-
-    for (( i_counter=0; i_counter<${#tick_interval[@]}; i_counter++ ));
+    for (( i_counter=0; i_counter<${#ping[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$nodes 500 50"
-            throughput="$start_throughput"
-            log_save_location="$base_directory/Experiment4/${tick_interval[$i_counter]}_tick_interval"
-            cfg_override_params="capacity_per_user=10000,shared_mempool_tick_interval_ms=${tick_interval[$i_counter]}"
+            cluster_config="$nodes 500 ${ping[$i_counter]}"
+            throughput="${start_throughput[$i_counter]}"
+            log_save_location="$base_directory/Experiment5/${ping[$i_counter]}_ping"
+            cfg_override_params="capacity_per_user=10000"
 
             start_experiment
             while [ $? != "0" ]
@@ -418,5 +419,5 @@ function test_experiment() {
     done
 }
 
-test_experiment
+experiment_5
 echo "Experiments finished!"
