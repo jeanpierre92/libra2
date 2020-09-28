@@ -80,8 +80,7 @@ pub(crate) async fn coordinator<V>(
     fs::create_dir_all("/jp_metrics").unwrap();
 
     thread::spawn(move || {
-        let paths = vec!["jp_mempool_process_incoming_transactions.csv",
-                         "jp_ac_client_transaction.csv"];
+        let paths = vec!["jp_ac_client_transaction.csv"];
                          
         let mut buf = vec![];
 
@@ -102,8 +101,7 @@ pub(crate) async fn coordinator<V>(
                 Ok(raw_msg) => if let Some(mut msg) = raw_msg {
                     msg.message.push('\n');
                     match msg.to_file {
-                        0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_mempool_process_incomming_tranactions.csv"),
-                        1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_ac_client_transaction.csv"),
+                        0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_ac_client_transaction.csv"),
                         _ => panic!("shittt"),
                     }
                 },
@@ -192,8 +190,7 @@ pub(crate) async fn coordinator<V>(
                                                 transactions,
                                                 request_id,
                                                 timeline_state,
-                                                peer,
-                                                tx.clone()
+                                                peer
                                             ))
                                             .await;
                                     }

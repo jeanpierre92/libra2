@@ -14,9 +14,6 @@ IFS=$','
 read -a param1 <<< $1
 read -a param2 <<< $2
 read -a param3 <<< $3
-jitter=$4
-correlation=$5
-distribution=$6
 
 #specify #nodes and #clusters
 nodes="$((${param1[@]/%/+}0))"
@@ -70,7 +67,9 @@ counter=0
 declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
 declare -a containers_1=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
 declare -a containers_2=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node1" -q))
-containers=(${containers[@]} ${containers_1[@]} ${containers_2[@]})
+declare -a containers_3=($(docker ps -f "ancestor=libra_validator_dynamic_model_block_node0" -q))
+declare -a containers_4=($(docker ps -f "ancestor=libra_validator_dynamic_model_block_node1" -q))
+containers=(${containers[@]} ${containers_1[@]} ${containers_2[@]} ${containers_3[@]} ${containers_4[@]})
 
 while [ $nodes -ne ${#containers[@]} ]
 do
@@ -86,7 +85,9 @@ do
     declare -a containers=($(docker ps -f "ancestor=libra_validator_dynamic" -q))
     declare -a containers_1=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node0" -q))
     declare -a containers_2=($(docker ps -f "ancestor=libra_validator_dynamic_perf_node1" -q))
-    containers=(${containers[@]} ${containers_1[@]} ${containers_2[@]})
+    declare -a containers_3=($(docker ps -f "ancestor=libra_validator_dynamic_model_block_node0" -q))
+    declare -a containers_4=($(docker ps -f "ancestor=libra_validator_dynamic_model_block_node1" -q))
+    containers=(${containers[@]} ${containers_1[@]} ${containers_2[@]} ${containers_3[@]} ${containers_4[@]})
     counter=$((counter+1))
 done
 
@@ -140,7 +141,7 @@ do
     for (( region_id=1; region_id<=$clusters; region_id++ ))
     do
         cluster_key="${clusters_nodes[$i]},$((region_id))"
-        command="docker exec -it ${containers[$i]} tc qdisc add dev eth0 parent 1:$region_id handle ${region_id}0: netem delay ${clusters_pings[$cluster_key]}ms ${jitter}ms ${correlation}% distribution ${distribution}"
+        command="docker exec -it ${containers[$i]} tc qdisc add dev eth0 parent 1:$region_id handle ${region_id}0: netem delay ${clusters_pings[$cluster_key]}ms"
         echo $command
         $command
     done
