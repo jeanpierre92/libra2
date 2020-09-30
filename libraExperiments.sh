@@ -27,7 +27,7 @@ function set_default_parameters() {
 
     only_keep_merged_logs="1"
 
-    experiment_location="jp"
+    experiment_location="server"
 
     if [ "$experiment_location" = "jp" ]
     then
@@ -274,12 +274,12 @@ function experiment_2() {
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
     delays=(10 30 50 70 90 110 130 150 200 250 300 400 500)
-    throughput="700"
+    throughput="400"
     
     cfg_override_params="capacity_per_user=10000"
     duration="400"
-    step_size_throughput="1"
-    step_size_duration="1"
+    step_size_throughput="3"
+    step_size_duration="2"
 
     for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
     do
@@ -303,13 +303,13 @@ function experiment_3() {
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    bandwidth=(5 10 15 20 30 40 50 100 200 500)
-    #bandwidth=(10 150)
-    throughput="700"
+    #bandwidth=(5 10 15 20 30 40 50 100 200 500)
+    bandwidth=(100 200 500)
+    throughput="200"
     
     cfg_override_params="capacity_per_user=10000"
-    duration="400"
-    step_size_throughput="1"
+    duration="600"
+    step_size_throughput="2"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#bandwidth[@]}; i_counter++ ));
@@ -334,11 +334,12 @@ function experiment_4() {
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    throughput="700"
-    max_block_size=(100 300 500 700 900 1100 1300 1500 100000)
+    throughput="300"
+    #max_block_size=(100 300 500 700 900 1100 1300 1500 100000)
+    max_block_size=(1500 2000 3000 4000 5000 10000)
     
-    duration="700"
-    step_size_throughput="1"
+    duration="600"
+    step_size_throughput="3"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#max_block_size[@]}; i_counter++ ));
@@ -360,14 +361,14 @@ function experiment_4() {
 
 function experiment_5() {
     #Data used for calibrating the Libra simulator
-    num_rounds="1"
+    num_rounds="6"
     nodes="5"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     #ping=(25 250 400)
     #start_throughput=(300 600 600)
     ping=(50 100 150 200 250 300 350 400 450)
-    start_throughput=(100 200 300 300 300 300 300 300 300)
+    start_throughput=(200 200 300 300 300 300 300 300 300)
     duration="600"
     step_size_throughput="1"
     step_size_duration="2"
@@ -419,5 +420,5 @@ function test_experiment() {
     done
 }
 
-experiment_5
+experiment_3
 echo "Experiments finished!"
