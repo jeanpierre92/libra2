@@ -182,7 +182,11 @@ impl BlockStore {
                         // Log CPU-usage every second
                         if counter % 10 == 0 {
                             system.refresh_cpu();
-                            let mut msg = system.get_global_processor_info().get_cpu_usage().to_string();
+
+                            let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
+                            let mut msg = format!("{},{}", system.get_global_processor_info().get_cpu_usage(), now);
+
+                            //let mut msg = system.get_global_processor_info().get_cpu_usage().to_string();
                             msg.push('\n');
                             buf[1].write_all(&msg.as_bytes()).expect("Could not write to jp_cpu_load.csv");
                         }

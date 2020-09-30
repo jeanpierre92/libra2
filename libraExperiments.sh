@@ -27,7 +27,7 @@ function set_default_parameters() {
 
     only_keep_merged_logs="1"
 
-    experiment_location="server"
+    experiment_location="jp"
 
     if [ "$experiment_location" = "jp" ]
     then
@@ -361,15 +361,15 @@ function experiment_4() {
 
 function experiment_5() {
     #Data used for calibrating the Libra simulator
-    num_rounds="6"
+    num_rounds="1"
     nodes="5"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
-    #ping=(25 250 400)
-    #start_throughput=(300 600 600)
-    ping=(50 100 150 200 250 300 350 400 450)
-    start_throughput=(200 200 300 300 300 300 300 300 300)
-    duration="600"
+    ping=(50)
+    start_throughput=(300)
+    #ping=(50 100 150 200 250 300 350 400 450)
+    #start_throughput=(200 200 300 300 300 300 300 300 300)
+    duration="60"
     step_size_throughput="1"
     step_size_duration="2"
     max_cpu_usage="99"
@@ -420,5 +420,5 @@ function test_experiment() {
     done
 }
 
-experiment_3
+experiment_5
 echo "Experiments finished!"
