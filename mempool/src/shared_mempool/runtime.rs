@@ -31,6 +31,7 @@ use vm_validator::vm_validator::{TransactionValidation, VMValidator};
 use std::{ops::Deref};
 use std::{fs, thread, path::Path, fs::OpenOptions};
 use std::io::{prelude::*, BufWriter};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// bootstrap of SharedMempool
 /// creates separate Tokio Runtime that runs following routines:
@@ -110,7 +111,8 @@ pub(crate) fn start_shared_mempool<V>(
         .expect("Cannot open file!"));
 
         loop {
-            let mut msg = jp_mempool.lock().unwrap().deref().transactions.system_ttl_index.size().to_string();
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
+            let mut msg = format!("{},{}", jp_mempool.lock().unwrap().deref().transactions.system_ttl_index.size().to_string(), now);
             msg.push('\n');
             buf_handle.write_all(msg.as_bytes()).expect("Could not write to jp_mempool_size.csv");
             buf_handle.flush().unwrap();
