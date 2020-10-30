@@ -311,21 +311,26 @@ impl RoundManager {
                 return;
             }
         };
-        let mut network = self.network.clone();
 
         // JP CODE
+        let mut number_of_transactions = 0;
         if let Some(nr_txns) = proposal_msg.proposal().payload() {
-            if let Some(start) = start_time {
-                let duration = start.elapsed();
-                //println!("Time elapsed for process_new_round_event(when this node is the next proposer) is: {:?}", duration);
-                self.metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: format!("{},{:?}", nr_txns.len(), duration.as_micros())}).unwrap_or_else(|error| {
-                    println!("Error: {:?}", error);
-                });
-            }
+            number_of_transactions = nr_txns.len();
         }
+
+        let mut network = self.network.clone();
         
         network.broadcast_proposal(proposal_msg).await;
         counters::PROPOSALS_COUNT.inc();
+
+        // JP CODE
+        if let Some(start) = start_time {
+            let duration = start.elapsed();
+            //println!("Time elapsed for process_new_round_event(when this node is the next proposer) is: {:?}", duration);
+            self.metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: format!("{},{:?}", number_of_transactions, duration.as_micros())}).unwrap_or_else(|error| {
+                println!("Error: {:?}", error);
+            });
+        }
     }
 
     async fn generate_proposal(
@@ -583,15 +588,16 @@ impl RoundManager {
         self.round_state.record_vote(vote.clone());
         let vote_msg = VoteMsg::new(vote, self.block_store.sync_info());
 
-        // JP CODE
-        let duration = start.elapsed();
-        //println!("Time elapsed for process_proposal is: {:?}", duration);
-        let msg = format!("{},{:?}", nr_txns, duration.as_micros());
-        self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
-            println!("Error: {:?}", error);
-        });  
-
         self.network.send_vote(vote_msg, vec![recipients]).await;
+
+         // JP CODE
+         let duration = start.elapsed();
+         //println!("Time elapsed for process_proposal is: {:?}", duration);
+         let msg = format!("{},{:?}", nr_txns, duration.as_micros());
+         self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
+             println!("Error: {:?}", error);
+         }); 
+
         Ok(())
     }
 
