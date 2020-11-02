@@ -163,7 +163,6 @@ impl BlockStore {
 
             let mut system = System::new();
             system.refresh_cpu();
-            let mut counter = 0;
             loop {
                 let received = rx.try_next();
                 match received {
@@ -179,18 +178,14 @@ impl BlockStore {
                             buf[i].flush().unwrap();
                         }
 
-                        // Log CPU-usage every second
-                        if counter % 10 == 0 {
-                            system.refresh_cpu();
+                        // Log CPU-usage every 100ms
+                        system.refresh_cpu();
 
-                            let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
-                            let mut msg = format!("{},{}", system.get_global_processor_info().get_cpu_usage(), now);
+                        let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
+                        let mut msg = format!("{},{}", system.get_global_processor_info().get_cpu_usage(), now);
 
-                            //let mut msg = system.get_global_processor_info().get_cpu_usage().to_string();
-                            msg.push('\n');
-                            buf[1].write_all(&msg.as_bytes()).expect("Could not write to jp_cpu_load.csv");
-                        }
-                        counter += 1;
+                        msg.push('\n');
+                        buf[1].write_all(&msg.as_bytes()).expect("Could not write to jp_cpu_load.csv");
                         thread::sleep(std::time::Duration::from_millis(100));
                     },
                 }
