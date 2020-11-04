@@ -27,7 +27,7 @@ function set_default_parameters() {
 
     only_keep_merged_logs="1"
 
-    experiment_location="jp"
+    experiment_location="server"
 
     if [ "$experiment_location" = "jp" ]
     then
@@ -235,18 +235,20 @@ function start_experiment() {
 
 function experiment_1() {
     #Data used for calculating the impact the number of nodes has on the maximum throughput.
+    only_keep_merged_logs="1"
     num_rounds="1"
-    num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
+    
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
     #Sensing:
-    start_throughput=(800 750 750 700 700 650 650 600 600 550 550 500 500 450 450 400)
+    #start_throughput=(900 850 800 750 650 500 450 450 400 350 350 300 250 250 200 200)
     #Constant:
-    #start_throughput=(1200 1100)
+    num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
+    start_throughput=(1290 1150 1000 900 790 680 610 545 515 480 450 430 380 360 335 325)
 
     cfg_override_params="capacity_per_user=10000"
     duration="600"
-    step_size_throughput="1"
+    step_size_throughput="0"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#num_nodes[@]}; i_counter++ ));
@@ -256,7 +258,7 @@ function experiment_1() {
             nodes=${num_nodes[$i_counter]}
             cluster_config="$nodes 500 50 10"
             throughput=${start_throughput[$i_counter]}
-            log_save_location="$base_directory/Experiment1/${num_nodes[$i_counter]}_nodes"
+            log_save_location="$base_directory/Experiment1_constant/${num_nodes[$i_counter]}_nodes"
 
             start_experiment
             while [ $? != "0" ]
@@ -269,24 +271,27 @@ function experiment_1() {
 
 function experiment_2() {
     #Data used for finding out how network delays impact the throughput and transaction delay
+    only_keep_merged_logs="1"
     num_rounds="1"
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    delays=(10 30 50 70 90 110 130 150 200 250 300 400 500)
-    throughput="400"
+    delays=(10 30 50 70 90 110 130 150 170 190 210 230 250)
+    start_throughput=(900 866 850 850 825 800 777 767 750 740 730 720 708)
+    #throughput="300"
     
     cfg_override_params="capacity_per_user=10000"
     duration="400"
-    step_size_throughput="3"
-    step_size_duration="2"
+    step_size_throughput="0"
+    step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             cluster_config="$nodes 500 ${delays[$i_counter]}"
-            log_save_location="$base_directory/Experiment2/${delays[$i_counter]}_delay"
+            throughput=${start_throughput[$i_counter]}
+            log_save_location="$base_directory/Experiment2_constant/${delays[$i_counter]}_delay"
 
             start_experiment
             while [ $? != "0" ]
@@ -299,17 +304,18 @@ function experiment_2() {
 
 function experiment_3() {
     #Data used for finding out how bandwidth affects the transaction throughput
+    only_keep_merged_logs="1"
     num_rounds="1"
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    #bandwidth=(5 10 15 20 30 40 50 100 200 500)
-    bandwidth=(100 200 500)
-    throughput="200"
+    bandwidth=(10 20 30 40 50 60 70 80 90 100 200 300 400 500)
+    #bandwidth=(100 200 500)
+    start_throughput=(484 664 724 772 791 792 795 800 803 805 836 843 840 840)
     
     cfg_override_params="capacity_per_user=10000"
-    duration="600"
-    step_size_throughput="2"
+    duration="400"
+    step_size_throughput="0"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#bandwidth[@]}; i_counter++ ));
@@ -317,7 +323,8 @@ function experiment_3() {
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             cluster_config="$nodes ${bandwidth[$i_counter]} 50"
-            log_save_location="$base_directory/Experiment3/${bandwidth[$i_counter]}_bandwidth"
+            throughput=${start_throughput[$i_counter]}
+            log_save_location="$base_directory/Experiment3_contant/${bandwidth[$i_counter]}_bandwidth"
 
             start_experiment
             while [ $? != "0" ]
@@ -330,16 +337,17 @@ function experiment_3() {
 
 function experiment_4() {
     #Data used for finding out how the maximum blocksize affects the transaction throughput
+    only_keep_merged_logs="1"
     num_rounds="1"
     nodes="5"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    throughput="300"
-    #max_block_size=(100 300 500 700 900 1100 1300 1500 100000)
-    max_block_size=(1500 2000 3000 4000 5000 10000)
-    
-    duration="600"
-    step_size_throughput="3"
+    #throughput="50"
+    max_block_size=(100 200 300 400 500 600 700 800 900 1000 1500 2000)
+    start_throughput=(257 411 540 650 733 760 785 800 830 866 914 927)
+
+    duration="400"
+    step_size_throughput="0"
     step_size_duration="1"
 
     for (( i_counter=0; i_counter<${#max_block_size[@]}; i_counter++ ));
@@ -347,7 +355,8 @@ function experiment_4() {
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             cluster_config="$nodes 500 50"
-            log_save_location="$base_directory/Experiment4/${max_block_size[$i_counter]}_blocksize"
+            throughput=${start_throughput[$i_counter]}
+            log_save_location="$base_directory/Experiment4_constant/${max_block_size[$i_counter]}_blocksize"
             cfg_override_params="capacity_per_user=10000,max_block_size=${max_block_size[$i_counter]}"
 
             start_experiment
@@ -361,18 +370,20 @@ function experiment_4() {
 
 function experiment_5() {
     #Data used for calibrating the Libra simulator
+    #num_rounds="8"
     num_rounds="1"
     nodes="5"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     ping=(50)
-    start_throughput=(300)
-    #ping=(50 100 150 200 250 300 350 400 450)
-    #start_throughput=(200 200 300 300 300 300 300 300 300)
-    duration="60"
-    step_size_throughput="1"
-    step_size_duration="2"
-    max_cpu_usage="99"
+    start_throughput=(870)
+    #ping=(50 100 150 200 250 300 350 400 400 400)
+    #start_throughput=(200 200 200 200 100 100 100 100 100)
+    duration="1800"
+    step_size_throughput="0"
+    step_size_duration="1"
+    max_cpu_usage="0"
+    only_keep_merged_logs="0"
 
     for (( i_counter=0; i_counter<${#ping[@]}; i_counter++ ));
     do
@@ -380,7 +391,7 @@ function experiment_5() {
         do
             cluster_config="$nodes 500 ${ping[$i_counter]}"
             throughput="${start_throughput[$i_counter]}"
-            log_save_location="$base_directory/Experiment5/${ping[$i_counter]}_ping"
+            log_save_location="$base_directory/Experiment5_high_load_calibration/${ping[$i_counter]}_ping"
             cfg_override_params="capacity_per_user=10000"
 
             start_experiment
@@ -420,5 +431,5 @@ function test_experiment() {
     done
 }
 
-experiment_5
+experiment_1
 echo "Experiments finished!"
