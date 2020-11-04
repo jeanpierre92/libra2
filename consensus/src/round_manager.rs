@@ -513,6 +513,12 @@ impl RoundManager {
         self.round_state.record_vote(timeout_vote.clone());
         let timeout_vote_msg = VoteMsg::new(timeout_vote, self.block_store.sync_info());
 
+        // JP CODE - TimeoutMsg in bytes
+        match lcs::to_bytes(&timeout_vote_msg) {
+            Ok(result) => println!("Timeout vote in Bytes: {}", result.len()),
+            Err(e) => println!("{:?}", e),
+        };
+
         self.network.broadcast_vote(timeout_vote_msg).await;
         Ok(())
     }

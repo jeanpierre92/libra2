@@ -132,6 +132,18 @@ impl NetworkSender {
             error!("Error broadcasting to self: {:?}", err);
         }
 
+        // JP CODE - proposal size in bytes
+        match &msg {
+            ConsensusMsg::ProposalMsg(message) => if let Some(payload) = message.proposal().payload() {
+                let number_of_txns = payload.len();
+                match lcs::to_bytes(&msg) {
+                    Ok(result) => println!("Block proposal with {} txns in Bytes: {}", number_of_txns, result.len()),
+                    Err(e) => println!("{:?}", e),
+                };
+            },
+            _ => (),
+        }
+
         // Get the list of validators excluding our own account address. Note the
         // ordering is not important in this case.
         let self_author = self.author;
@@ -139,7 +151,7 @@ impl NetworkSender {
             .validators
             .get_ordered_account_addresses_iter()
             .filter(|author| author != &self_author);
-
+        
         // Broadcast message over direct-send to all other validators.
         if let Err(err) = self.network_sender.send_to_many(other_validators, msg) {
             error!("Error broadcasting message: {:?}", err);
@@ -158,6 +170,13 @@ impl NetworkSender {
         let mut network_sender = self.network_sender.clone();
         let mut self_sender = self.self_sender.clone();
         let msg = ConsensusMsg::VoteMsg(Box::new(vote_msg));
+
+        // JP CODE - voteMsg in bytes
+        match lcs::to_bytes(&msg) {
+            Ok(result) => println!("Block vote in Bytes: {}", result.len()),
+            Err(e) => println!("{:?}", e),
+        };
+
         for peer in recipients {
             if self.author == peer {
                 let self_msg = Event::Message((self.author, msg.clone()));

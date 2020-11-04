@@ -231,8 +231,11 @@ impl<TMessage: Message> NetworkSender<TMessage> {
         protocol: ProtocolId,
         message: TMessage,
     ) -> Result<(), NetworkError> {
-        let mdata = lcs::to_bytes(&message)?.into();
-        self.peer_mgr_reqs_tx.send_to(recipient, protocol, mdata)?;
+        // JP CODE
+        let mdata = lcs::to_bytes(&message);
+        //let length_in_bytes = lcs::to_bytes(&message)?.len();
+        //println!("Number of Bytes = {}", length_in_bytes);
+        self.peer_mgr_reqs_tx.send_to(recipient, protocol, mdata?.into())?;
         Ok(())
     }
 
