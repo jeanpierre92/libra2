@@ -91,6 +91,8 @@ struct Args {
     step_size_throughput: usize,
     #[structopt(long, default_value = "10")]
     step_size_duration: u64,
+    #[structopt(long, default_value = "1.0")]
+    sending_interval_duration: f64,
     #[structopt(long, default_value = "0")]
     max_cpu_usage: usize,
     #[structopt(long)]
@@ -128,6 +130,7 @@ pub struct JpStruct {
     throughput: usize,
     step_size_throughput: usize,
     step_size_duration: u64,
+    sending_interval_duration: f64,
     max_cpu_usage: usize,
 }
 
@@ -156,6 +159,7 @@ pub async fn main() {
             throughput: args.throughput,
             step_size_throughput: args.step_size_throughput,
             step_size_duration: args.step_size_duration,
+            sending_interval_duration: args.sending_interval_duration,
             max_cpu_usage: args.max_cpu_usage,
         };
         if args.swarm {
@@ -326,14 +330,21 @@ pub async fn emit_tx(
 ) {
     let mut emitter = TxEmitter::new(cluster);
     // JP CODE
-    let worker_wait_time_start = (accounts_per_client as f64 / jp_struct.throughput as f64) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64) * 1_000_000.;
+    //let worker_wait_time_start = (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64 * accounts_per_client as f64) / (jp_struct.throughput as f64) * 1_000_000.;
+    let sending_interval_duration = jp_struct.sending_interval_duration;
+    let number_of_txns_per_cycle = (jp_struct.throughput as f64 * jp_struct.sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
+    println!("sending_interval_duration = {}", &sending_interval_duration);
+    println!("number_of_txns_per_cycle = {}", &number_of_txns_per_cycle);
+    println!();
+
     let job = emitter
         .start_job(EmitJobRequest {
             instances: cluster.validator_instances().to_vec(),
             accounts_per_client,
             workers_per_ac,
             thread_params,
-            worker_wait_time_start,
+            sending_interval_duration,
+            number_of_txns_per_cycle,
         })
         .await
         .expect("Failed to start emit job");
@@ -347,13 +358,17 @@ pub async fn emit_tx(
     
     while Instant::now() < deadline {
         let window = Duration::from_secs(jp_struct.step_size_duration);
-        let worker_wait_time = (accounts_per_client as f64 / jp_struct.throughput as f64) * (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64) * 1_000_000.;
-        job.jp_wait_time.store(worker_wait_time as u64, Ordering::Relaxed);
+        //let worker_wait_time = (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64 * accounts_per_client as f64) / (jp_struct.throughput as f64) * 1_000_000.;
+        let number_of_txns_per_cycle = (jp_struct.throughput as f64 * jp_struct.sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
+        //println!("number_of_txns_per_cycle = {}", &number_of_txns_per_cycle);
+        //println!("worker_wait_time = {}", &worker_wait_time);
+
+        job.number_of_txns_per_cycle.store(number_of_txns_per_cycle as u64, Ordering::Relaxed);
         tokio::time::delay_for(window).await;
 
         system.refresh_cpu();
         cpu_usage = system.get_global_processor_info().get_cpu_usage();
-        println!("CPU usage: {}%", cpu_usage);
+        //println!("CPU usage: {}%", cpu_usage);
         if jp_struct.max_cpu_usage == 0 || cpu_usage < jp_struct.max_cpu_usage as f32 {
             jp_struct.throughput += jp_struct.step_size_throughput;
         }
@@ -596,7 +611,8 @@ impl ClusterTestRunner {
                 wait_millis: args.wait_millis,
                 wait_committed: !args.burst,
             },
-            worker_wait_time_start: 100.0,
+            sending_interval_duration: 1.0,
+            number_of_txns_per_cycle: 10.0,
         };
         let emit_to_validator =
             if cluster.fullnode_instances().len() < cluster.validator_instances().len() {

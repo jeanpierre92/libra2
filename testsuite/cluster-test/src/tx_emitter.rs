@@ -54,7 +54,7 @@ pub struct EmitJob {
     workers: Vec<Worker>,
     stop: Arc<AtomicBool>,
     stats: Arc<StatsAccumulator>,
-    pub jp_wait_time: Arc<AtomicU64>,
+    pub number_of_txns_per_cycle: Arc<AtomicU64>,
 }
 
 #[derive(Default)]
@@ -105,7 +105,8 @@ pub struct EmitJobRequest {
     pub accounts_per_client: usize,
     pub workers_per_ac: Option<usize>,
     pub thread_params: EmitThreadParams,
-    pub worker_wait_time_start: f64,
+    pub sending_interval_duration: f64,
+    pub number_of_txns_per_cycle: f64,
 }
 
 impl EmitJobRequest {
@@ -123,7 +124,8 @@ impl EmitJobRequest {
                 accounts_per_client: 15,
                 workers_per_ac: None,
                 thread_params: EmitThreadParams::default(),
-                worker_wait_time_start: 100.0,
+                sending_interval_duration: 1.0,
+                number_of_txns_per_cycle: 10.0,
             },
         }
     }
@@ -197,7 +199,8 @@ impl TxEmitter {
         let stop = Arc::new(AtomicBool::new(false));
 
         // JP CODE
-        let jp_wait_time = Arc::new(AtomicU64::new(req.worker_wait_time_start as u64));
+        let sending_interval_duration = req.sending_interval_duration;
+        let number_of_txns_per_cycle = Arc::new(AtomicU64::new(req.number_of_txns_per_cycle as u64));
 
         let stats = Arc::new(StatsAccumulator::default());
         let tokio_handle = Handle::current();
@@ -207,7 +210,7 @@ impl TxEmitter {
                 let accounts = (&mut all_accounts).take(req.accounts_per_client).collect();
                 let all_addresses = all_addresses.clone();
                 let stop = stop.clone();
-                let jp_wait_time = jp_wait_time.clone();
+                let number_of_txns_per_cycle = number_of_txns_per_cycle.clone();
                 let params = req.thread_params.clone();
                 let stats = Arc::clone(&stats);
                 let worker = SubmissionWorker {
@@ -217,7 +220,8 @@ impl TxEmitter {
                     stop,
                     params,
                     stats,
-                    jp_wait_time,
+                    sending_interval_duration,
+                    number_of_txns_per_cycle,
                 };
                 let join_handle = tokio_handle.spawn(worker.run().boxed());
                 workers.push(Worker { join_handle });
@@ -228,7 +232,7 @@ impl TxEmitter {
             workers,
             stop,
             stats,
-            jp_wait_time,
+            number_of_txns_per_cycle,
         })
     }
 
@@ -365,7 +369,8 @@ struct SubmissionWorker {
     stop: Arc<AtomicBool>,
     params: EmitThreadParams,
     stats: Arc<StatsAccumulator>,
-    jp_wait_time: Arc<AtomicU64>,
+    sending_interval_duration: f64,
+    number_of_txns_per_cycle: Arc<AtomicU64>,
 }
 
 impl SubmissionWorker {
@@ -373,13 +378,16 @@ impl SubmissionWorker {
     async fn run(mut self) -> Vec<AccountData> {
         let _wait = Duration::from_millis(self.params.wait_millis);
         while !self.stop.load(Ordering::Relaxed) {
-            let requests = self.gen_requests();
+            let number_of_txns_per_cycle = self.number_of_txns_per_cycle.load(Ordering::Relaxed);
+            //println!("number_of_txns_per_cycle(worker) = {}", &number_of_txns_per_cycle);
+            let requests = self.gen_requests(number_of_txns_per_cycle);
             let num_requests = requests.len();
+            //println!("#requests sending = {}", &num_requests);
             let start_time = Instant::now();
             let tx_offset_time = 0u64;
             // JP CODE
             let cur_time = Instant::now();
-            let wait_util = cur_time + Duration::from_micros(self.jp_wait_time.load(Ordering::Relaxed));
+            let wait_util = cur_time + Duration::from_secs_f64(self.sending_interval_duration);
             for request in requests {
                 //let cur_time = Instant::now();
                 //JP CODE
@@ -398,6 +406,7 @@ impl SubmissionWorker {
             // JP CODE
             let now = Instant::now();
             if wait_util > now {
+                //println!("Wait duration left = {:?}", wait_util - now);
                 time::delay_for(wait_util - now).await;
             }
             if self.params.wait_committed {
@@ -447,13 +456,17 @@ impl SubmissionWorker {
         self.accounts
     }
 
-    fn gen_requests(&mut self) -> Vec<SignedTransaction> {
+    fn gen_requests(&mut self, number_of_txns_per_cycle: u64) -> Vec<SignedTransaction> {
         let mut rng = ThreadRng::default();
-        let batch_size = max(MAX_TXN_BATCH_SIZE, self.accounts.len());
+        // JP CODE
+        //print!("chosen_accounts.len = {}", &accounts.len());
+        //println!("accounts.len = {}, ", self.accounts.len());
+        //let batch_size = max(MAX_TXN_BATCH_SIZE, self.accounts.len());
+        let batch_size = min(number_of_txns_per_cycle, self.accounts.len() as u64);
         let accounts = self
             .accounts
             .iter_mut()
-            .choose_multiple(&mut rng, batch_size);
+            .choose_multiple(&mut rng, batch_size as usize);
 
         let mut requests = Vec::with_capacity(accounts.len());
         for sender in accounts {
