@@ -331,8 +331,10 @@ pub async fn emit_tx(
     let mut emitter = TxEmitter::new(cluster);
     // JP CODE
     //let worker_wait_time_start = (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64 * accounts_per_client as f64) / (jp_struct.throughput as f64) * 1_000_000.;
-    let sending_interval_duration = jp_struct.sending_interval_duration;
-    let number_of_txns_per_cycle = (jp_struct.throughput as f64 * jp_struct.sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
+    let mut sending_interval_duration = jp_struct.sending_interval_duration;
+    let mut number_of_txns_per_cycle = (jp_struct.throughput as f64 * sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
+    number_of_txns_per_cycle = number_of_txns_per_cycle.round();
+    sending_interval_duration = (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64) * number_of_txns_per_cycle / jp_struct.throughput as f64;
     println!("sending_interval_duration = {}", &sending_interval_duration);
     println!("number_of_txns_per_cycle = {}", &number_of_txns_per_cycle);
     println!();
