@@ -11,6 +11,7 @@
 #Eg: cfg_override_params='genesis_file_location="genesis2.blob",max_block_size=250,shared_mempool_tick_interval_ms=50,capacity_per_user=1000'
 
 function set_default_parameters() {
+    RANDOM=640
     nodes="4"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
@@ -18,16 +19,17 @@ function set_default_parameters() {
     cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
 
     workers_per_account="3"
-    accounts_per_client="50"
+    accounts_per_client="80"
     throughput="300"
     duration="60"
     step_size_throughput="10"
     step_size_duration="10"
     max_cpu_usage="0"
+    sending_interval_duration="1.0"
 
     only_keep_merged_logs="1"
 
-    experiment_location="server"
+    experiment_location="jp"
 
     if [ "$experiment_location" = "jp" ]
     then
@@ -172,6 +174,56 @@ function get_pings_between_clusters_2() {
     echo $pings
 }
 
+function get_cluster_config() {
+    num_nodes=$1
+    ping_mean=$2
+    max_ping_distance=$3
+
+    #ping_mean <= random_number <= ping_mean + max_ping_distance 
+    declare -A ping_array
+    for (( i_counter=0; i_counter<$num_nodes; i_counter++ ));
+    do
+        for (( j_counter=$i_counter; j_counter<$num_nodes; j_counter++ ));
+        do
+            random_number=$(( ($RANDOM % ($max_ping_distance+1)) + $ping_mean ))
+            ping_array[$i_counter,$j_counter]=$random_number
+            #echo "${ping_array[$i_counter,$j_counter]}"
+        done
+    done
+
+    for (( i_counter=1; i_counter<$num_nodes; i_counter++ ));
+    do
+        for (( j_counter=0; j_counter<$i_counter; j_counter++ ));
+        do
+            ping_array[$i_counter,$j_counter]=${ping_array[$j_counter,$i_counter]}
+        done
+    done
+
+    ping_string=""
+    for (( i_counter=0; i_counter<$num_nodes; i_counter++ ));
+    do
+        ping_string="$ping_string,"
+        for (( j_counter=0; j_counter<$num_nodes; j_counter++ ));
+        do
+            if [ ${ping_string: -1} = "," ]
+            then
+                ping_string="$ping_string${ping_array[$i_counter,$j_counter]}"
+                continue
+            fi
+            ping_string="$ping_string:${ping_array[$i_counter,$j_counter]}"
+        done
+    done
+
+    nodes_in_each_cluster=""
+    for (( j_counter=0; j_counter<$num_nodes; j_counter++ ));
+    do
+        nodes_in_each_cluster="$nodes_in_each_cluster,1"
+    done
+
+    result_string="${nodes_in_each_cluster:1} 500 ${ping_string:1}"
+    echo $result_string
+}
+
 #Put nodes into clusters based on $cluster_config
 function put_nodes_into_clusters() {
     source put-containers-in-clusters-generic.sh $cluster_config
@@ -196,7 +248,8 @@ function start_txns_generator() {
     --duration $duration \
     --max-cpu-usage $max_cpu_usage \
     --step-size-throughput $step_size_throughput \
-    --step-size-duration $step_size_duration
+    --step-size-duration $step_size_duration \
+    --sending-interval-duration $sending_interval_duration
 }
 
 #Copy logs from the containers to host
@@ -383,6 +436,7 @@ function experiment_5() {
     step_size_throughput="0"
     step_size_duration="1"
     max_cpu_usage="0"
+    sending_interval_duration="1.0"
     only_keep_merged_logs="0"
 
     for (( i_counter=0; i_counter<${#ping[@]}; i_counter++ ));
@@ -403,10 +457,46 @@ function experiment_5() {
     done
 }
 
+function vary_sending_interval() {
+    #Data used for finding out how the maximum blocksize affects the transaction throughput
+    only_keep_merged_logs="1"
+    num_rounds="1"
+    nodes="7"
+    image_node0="libra_validator_dynamic_perf_node0:latest"
+    image_node1="libra_validator_dynamic_perf_node1:latest"
+    throughput="500"
+    sending_interval=(0.1 0.5 1 2 3)
+
+    duration="60"
+    step_size_throughput="0"
+    step_size_duration="1"
+
+    for (( i_counter=0; i_counter<${#sending_interval[@]}; i_counter++ ));
+    do
+        for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
+        do
+            sending_interval_duration="${sending_interval[$i_counter]}"
+            echo "$(get_cluster_config "$nodes" "50" "10")"
+            cluster_config="$(get_cluster_config "$nodes" "50" "10")"
+            log_save_location="$base_directory/Experiment_vary_sending_interval/${sending_interval[$i_counter]}_interval"
+            cfg_override_params="capacity_per_user=10000"
+
+            start_experiment
+            while [ $? != "0" ]
+            do
+                start_experiment
+            done
+        done
+    done
+}
+
 function test_experiment() {
-    for (( i_counter=3; i_counter<=3; i_counter++ ))
+    for (( i_counter=5; i_counter<=5; i_counter++ ))
     do
         nodes=$i_counter
+        image_node0="libra_validator_dynamic_perf_node0:latest"
+        image_node1="libra_validator_dynamic_perf_node1:latest"
+
         #tick_interval=$((50 + $i_counter * 50))
         #tick_interval="50"
         #cfg_override_params="shared_mempool_tick_interval_ms=$tick_interval"
@@ -414,12 +504,13 @@ function test_experiment() {
         #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
         cluster_config="$nodes 500 50"
 
-        throughput="2000"
-        duration="60"
-        step_size_throughput="10"
+        throughput="800"
+        duration="150"
+        step_size_throughput="0"
         step_size_duration="1"
+        sending_interval_duration="0.1"
 
-        log_save_location="$base_directory/Experiment_test"
+        log_save_location="$base_directory/Experiment_test/5_nodes"
 
         sleep 2
 
@@ -431,5 +522,5 @@ function test_experiment() {
     done
 }
 
-experiment_1
+vary_sending_interval
 echo "Experiments finished!"
