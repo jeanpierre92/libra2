@@ -12,7 +12,7 @@
 
 function set_default_parameters() {
     RANDOM=640
-    nodes="4"
+    nodes="9"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     cfg_override_params="capacity_per_user=10000"
@@ -236,6 +236,19 @@ function put_nodes_into_clusters() {
 
 #Starts the txns generator
 function start_txns_generator() {
+    if [ $nodes -lt 5 ]
+    then
+        workers_per_account="4"
+    elif [ $nodes -lt 7 ]
+    then
+        workers_per_account="3"
+    elif [ $nodes -lt 9 ]
+    then
+        workers_per_account="2"
+    else
+        workers_per_account="1"
+    fi
+
     cargo run -p cluster-test -- \
     --mint-file "$mint_file_location" \
     --swarm \
@@ -464,10 +477,10 @@ function vary_sending_interval() {
     nodes="7"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    throughput="500"
-    sending_interval=(0.1 0.5 1 2 3)
+    throughput="600"
+    sending_interval=(0.3)
 
-    duration="60"
+    duration="120"
     step_size_throughput="0"
     step_size_duration="1"
 

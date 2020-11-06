@@ -356,12 +356,19 @@ pub async fn emit_tx(
     let mut cpu_usage = system.get_global_processor_info().get_cpu_usage();
     println!("CPU usage: {}%", cpu_usage);
     
+    let mut x = 0.1;
     while Instant::now() < deadline {
         let window = Duration::from_secs(jp_struct.step_size_duration);
         //let worker_wait_time = (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64 * accounts_per_client as f64) / (jp_struct.throughput as f64) * 1_000_000.;
-        let number_of_txns_per_cycle = (jp_struct.throughput as f64 * jp_struct.sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
-        //println!("number_of_txns_per_cycle = {}", &number_of_txns_per_cycle);
-        //println!("worker_wait_time = {}", &worker_wait_time);
+        let mut number_of_txns_per_cycle = (jp_struct.throughput as f64 * jp_struct.sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
+        
+        if x < 1.0 {
+            number_of_txns_per_cycle *= x;
+            x += 0.05;
+        }
+        number_of_txns_per_cycle = number_of_txns_per_cycle.round();
+
+        
 
         job.number_of_txns_per_cycle.store(number_of_txns_per_cycle as u64, Ordering::Relaxed);
         tokio::time::delay_for(window).await;
