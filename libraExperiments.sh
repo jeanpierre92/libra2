@@ -493,6 +493,7 @@ function vary_sending_interval() {
             for (( k_counter=0; k_counter<$num_rounds; k_counter++ ));
             do
                 sending_interval_duration="${sending_interval[$j_counter]}"
+                throughput="${start_throughput[$i_counter]}"
                 nodes="${num_nodes[$i_counter]}"
                 cluster_config="$(get_cluster_config "$nodes" "50" "10")"
                 log_save_location="$base_directory/Experiment_vary_sending_interval/${num_nodes[$i_counter]}_nodes/${sending_interval[$j_counter]}_interval"
