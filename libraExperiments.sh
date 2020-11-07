@@ -18,7 +18,7 @@ function set_default_parameters() {
     cfg_override_params="capacity_per_user=10000"
     cluster_config="1,1,2 500 10:30:40,30:15:50,40:50:12"
 
-    workers_per_account="3"
+    workers_per_ac="3"
     accounts_per_client="80"
     throughput="300"
     duration="60"
@@ -238,15 +238,15 @@ function put_nodes_into_clusters() {
 function start_txns_generator() {
     if [ $nodes -lt 5 ]
     then
-        workers_per_account="4"
+        workers_per_ac="4"
     elif [ $nodes -lt 7 ]
     then
-        workers_per_account="3"
+        workers_per_ac="3"
     elif [ $nodes -lt 9 ]
     then
-        workers_per_account="2"
+        workers_per_ac="2"
     else
-        workers_per_account="1"
+        workers_per_ac="1"
     fi
 
     cargo run -p cluster-test -- \
@@ -254,7 +254,7 @@ function start_txns_generator() {
     --swarm \
     --peers $(get_nodes_ips_ports) \
     --emit-tx \
-    --workers-per-ac $workers_per_account \
+    --workers-per-ac $workers_per_ac \
     --accounts-per-client $accounts_per_client \
     --burst \
     --throughput $throughput \
