@@ -472,32 +472,37 @@ function experiment_5() {
 
 function vary_sending_interval() {
     #Data used for finding out how the maximum blocksize affects the transaction throughput
-    only_keep_merged_logs="1"
-    num_rounds="1"
-    nodes="7"
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
-    throughput="600"
-    sending_interval=(0.3)
+    only_keep_merged_logs="1"
 
-    duration="120"
+    num_rounds="1"
+    num_nodes=(2 4 6 8 10 12 14 16 17)
+
+    start_throughput=(1250 1100 800 660 550 510 450 420 400)
+    sending_interval=(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1)
+
+    duration="300"
     step_size_throughput="0"
     step_size_duration="1"
 
-    for (( i_counter=0; i_counter<${#sending_interval[@]}; i_counter++ ));
+    for (( i_counter=0; i_counter<${#num_nodes[@]}; i_counter++ ));
     do
-        for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
+        for (( j_counter=0; j_counter<${#sending_interval[@]}; j_counter++ ));
         do
-            sending_interval_duration="${sending_interval[$i_counter]}"
-            echo "$(get_cluster_config "$nodes" "50" "10")"
-            cluster_config="$(get_cluster_config "$nodes" "50" "10")"
-            log_save_location="$base_directory/Experiment_vary_sending_interval/${sending_interval[$i_counter]}_interval"
-            cfg_override_params="capacity_per_user=10000"
-
-            start_experiment
-            while [ $? != "0" ]
+            for (( k_counter=0; k_counter<$num_rounds; k_counter++ ));
             do
+                sending_interval_duration="${sending_interval[$j_counter]}"
+                nodes="${num_nodes[$i_counter]}"
+                cluster_config="$(get_cluster_config "$nodes" "50" "10")"
+                log_save_location="$base_directory/Experiment_vary_sending_interval/${num_nodes[$i_counter]}_nodes/${sending_interval[$j_counter]}_interval"
+                cfg_override_params="capacity_per_user=10000"
+
                 start_experiment
+                while [ $? != "0" ]
+                do
+                    start_experiment
+                done
             done
         done
     done
