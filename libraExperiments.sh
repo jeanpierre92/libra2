@@ -236,13 +236,29 @@ function put_nodes_into_clusters() {
 
 #Starts the txns generator
 function start_txns_generator() {
-    if [ $nodes -lt 5 ]
+    if [ $nodes -lt 3 ] #2 nodes
+    then
+        workers_per_ac="8"
+    elif [ $nodes -lt 4 ] #3 nodes
+    then
+        workers_per_ac="5"
+    elif [ $nodes -lt 5 ] #4 nodes
     then
         workers_per_ac="4"
-    elif [ $nodes -lt 7 ]
+    else
+    elif [ $nodes -lt 6 ] #5 nodes
     then
         workers_per_ac="3"
-    elif [ $nodes -lt 9 ]
+    else
+    elif [ $nodes -lt 7 ] #6 nodes
+    then
+        workers_per_ac="2"
+    else
+    elif [ $nodes -lt 8 ] #7 nodes
+    then
+        workers_per_ac="2"
+    else
+    elif [ $nodes -lt 9 ] #8 nodes
     then
         workers_per_ac="2"
     else
@@ -477,10 +493,13 @@ function vary_sending_interval() {
     only_keep_merged_logs="1"
 
     num_rounds="1"
-    num_nodes=(2 4 6 8 10 12 14 16 17)
+    num_nodes=(3)
 
-    start_throughput=(1250 1100 800 660 550 510 450 420 400)
-    sending_interval=(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1)
+    #start_throughput=(1250 1100 800 660 550 510 450 420 400)
+    #start_throughput=(1300 1030 830 700 640 560 500 450 430)
+    start_throughput=(1200)
+    #sending_interval=(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1)
+    sending_interval=(0.5)
 
     duration="300"
     step_size_throughput="0"
