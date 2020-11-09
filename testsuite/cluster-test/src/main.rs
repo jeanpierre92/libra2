@@ -322,7 +322,7 @@ fn parse_host_port(s: &str) -> Result<(String, u32, Option<u32>)> {
 
 pub async fn emit_tx(
     cluster: &Cluster,
-    accounts_per_client: usize,
+    mut accounts_per_client: usize,
     workers_per_ac: Option<usize>,
     thread_params: EmitThreadParams,
     duration: Duration,
@@ -334,6 +334,10 @@ pub async fn emit_tx(
     let mut sending_interval_duration = jp_struct.sending_interval_duration;
     let mut number_of_txns_per_cycle = (jp_struct.throughput as f64 * sending_interval_duration) / (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64);
     number_of_txns_per_cycle = number_of_txns_per_cycle.round();
+    
+    // To make sure there are enough accounts to send tranasctions from
+    accounts_per_client = number_of_txns_per_cycle as usize;
+    
     sending_interval_duration = (cluster.validator_instances.len() as f64 * (workers_per_ac.unwrap_or(1)) as f64) * number_of_txns_per_cycle / jp_struct.throughput as f64;
     println!("sending_interval_duration = {}", &sending_interval_duration);
     println!("number_of_txns_per_cycle = {}", &number_of_txns_per_cycle);
