@@ -12,7 +12,7 @@
 
 function set_default_parameters() {
     RANDOM=640
-    nodes="9"
+    nodes="5"
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     cfg_override_params="capacity_per_user=10000"
@@ -21,11 +21,11 @@ function set_default_parameters() {
     workers_per_ac="3"
     accounts_per_client="80"
     throughput="300"
-    duration="60"
-    step_size_throughput="10"
+    duration="300"
+    step_size_throughput="1"
     step_size_duration="10"
     max_cpu_usage="0"
-    sending_interval_duration="1.0"
+    sending_interval_duration="0.3"
 
     only_keep_merged_logs="1"
 
@@ -245,19 +245,15 @@ function start_txns_generator() {
     elif [ $nodes -lt 5 ] #4 nodes
     then
         workers_per_ac="4"
-    else
     elif [ $nodes -lt 6 ] #5 nodes
     then
         workers_per_ac="3"
-    else
     elif [ $nodes -lt 7 ] #6 nodes
     then
         workers_per_ac="2"
-    else
     elif [ $nodes -lt 8 ] #7 nodes
     then
         workers_per_ac="2"
-    else
     elif [ $nodes -lt 9 ] #8 nodes
     then
         workers_per_ac="2"
@@ -529,28 +525,24 @@ function vary_sending_interval() {
 }
 
 function test_experiment() {
-    for (( i_counter=5; i_counter<=5; i_counter++ ))
+    for (( i_counter=2; i_counter<=2; i_counter++ ))
     do
+        image_node0="libra_validator_dynamic:latest"
+        image_node1="libra_validator_dynamic:latest"
+        
+        only_keep_merged_logs="1"
         nodes=$i_counter
-        image_node0="libra_validator_dynamic_perf_node0:latest"
-        image_node1="libra_validator_dynamic_perf_node1:latest"
 
-        #tick_interval=$((50 + $i_counter * 50))
-        #tick_interval="50"
-        #cfg_override_params="shared_mempool_tick_interval_ms=$tick_interval"
-        cfg_override_params="capacity_per_user=10000"
-        #cluster_config="$(devide_nodes_between_clusters $nodes 0.3316 0.4998 0.0090 0.1177 0.0224 0.0195) 500 $(get_pings_between_clusters)"
-        cluster_config="$nodes 500 50"
-
-        throughput="800"
+        sending_interval_duration="0.2"
+        throughput="1450"
         duration="150"
+
+        cluster_config="$(get_cluster_config "$nodes" "50" "10")"
+        log_save_location="$base_directory/Experiment_test/${nodes}_nodes"
+        cfg_override_params="capacity_per_user=10000"
+        
         step_size_throughput="0"
         step_size_duration="1"
-        sending_interval_duration="0.1"
-
-        log_save_location="$base_directory/Experiment_test/5_nodes"
-
-        sleep 2
 
         start_experiment
         while [ $? != "0" ]
@@ -560,5 +552,5 @@ function test_experiment() {
     done
 }
 
-vary_sending_interval
+test_experiment
 echo "Experiments finished!"

@@ -39,6 +39,9 @@ use network::protocols::network::Event;
 use safety_rules::SafetyRulesManager;
 use std::{cmp::Ordering, sync::Arc, time::Duration};
 
+// JP CODE
+use std::time::Instant;
+
 /// RecoveryManager is used to process events in order to sync up with peer if we can't recover from local consensusdb
 /// RoundManager is used for normal event handling.
 /// We suppress clippy warning here because we expect most of the time we will have RoundManager
@@ -372,12 +375,13 @@ impl EpochManager {
         &mut self,
         peer_id: AccountAddress,
         consensus_msg: ConsensusMsg,
+        msgStartTime: Option<Instant>,
     ) -> anyhow::Result<()> {
         if let Some(event) = self.process_epoch(peer_id, consensus_msg).await? {
             let verified_event = event
                 .verify(&self.epoch_state().verifier)
                 .context("[EpochManager] Verify event")?;
-            self.process_event(peer_id, verified_event).await?;
+            self.process_event(peer_id, verified_event, msgStartTime).await?;
         }
         Ok(())
     }
@@ -422,6 +426,7 @@ impl EpochManager {
         &mut self,
         peer_id: AccountAddress,
         event: VerifiedEvent,
+        msgStartTime: Option<Instant>,
     ) -> anyhow::Result<()> {
         match self.processor_mut() {
             RoundProcessor::Recovery(p) => {
@@ -437,10 +442,10 @@ impl EpochManager {
             }
             RoundProcessor::Normal(p) => match event {
                 VerifiedEvent::ProposalMsg(proposal) => {
-                    monitor!("process_proposal", p.process_proposal_msg(*proposal).await)
+                    monitor!("process_proposal", p.process_proposal_msg(*proposal, msgStartTime).await)
                 }
                 VerifiedEvent::VoteMsg(vote) => {
-                    monitor!("process_vote", p.process_vote_msg(*vote).await)
+                    monitor!("process_vote", p.process_vote_msg(*vote, msgStartTime).await)
                 }
                 VerifiedEvent::SyncInfo(sync_info) => monitor!(
                     "process_sync_info",
@@ -497,7 +502,8 @@ impl EpochManager {
                         Ok(())
                     }
                     msg = network_receivers.consensus_messages.select_next_some() => {
-                        monitor!("process_message", self.process_message(msg.0, msg.1).await)
+                        let msgStartTime = Instant::now();
+                        monitor!("process_message", self.process_message(msg.0, msg.1, Some(msgStartTime)).await)
                     }
                     block_retrieval = network_receivers.block_retrieval.select_next_some() => {
                         monitor!("process_block_retrieval", self.process_block_retrieval(block_retrieval).await)
