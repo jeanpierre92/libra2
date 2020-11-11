@@ -375,13 +375,13 @@ impl EpochManager {
         &mut self,
         peer_id: AccountAddress,
         consensus_msg: ConsensusMsg,
-        msgStartTime: Option<Instant>,
+        msg_start_time: Option<Instant>,
     ) -> anyhow::Result<()> {
         if let Some(event) = self.process_epoch(peer_id, consensus_msg).await? {
             let verified_event = event
                 .verify(&self.epoch_state().verifier)
                 .context("[EpochManager] Verify event")?;
-            self.process_event(peer_id, verified_event, msgStartTime).await?;
+            self.process_event(peer_id, verified_event, msg_start_time).await?;
         }
         Ok(())
     }
@@ -426,7 +426,7 @@ impl EpochManager {
         &mut self,
         peer_id: AccountAddress,
         event: VerifiedEvent,
-        msgStartTime: Option<Instant>,
+        msg_start_time: Option<Instant>,
     ) -> anyhow::Result<()> {
         match self.processor_mut() {
             RoundProcessor::Recovery(p) => {
@@ -442,10 +442,10 @@ impl EpochManager {
             }
             RoundProcessor::Normal(p) => match event {
                 VerifiedEvent::ProposalMsg(proposal) => {
-                    monitor!("process_proposal", p.process_proposal_msg(*proposal, msgStartTime).await)
+                    monitor!("process_proposal", p.process_proposal_msg(*proposal, msg_start_time).await)
                 }
                 VerifiedEvent::VoteMsg(vote) => {
-                    monitor!("process_vote", p.process_vote_msg(*vote, msgStartTime).await)
+                    monitor!("process_vote", p.process_vote_msg(*vote, msg_start_time).await)
                 }
                 VerifiedEvent::SyncInfo(sync_info) => monitor!(
                     "process_sync_info",
