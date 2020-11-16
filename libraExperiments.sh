@@ -502,12 +502,11 @@ function experiment_5() {
     done
 }
 
-function experiment_compare_swarm_and_simulator() {
+function experiment_compare_experiment_1() {
     #Data used for comparing Libra Swarm agains the simulator
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     num_rounds="1"
-    attempt_name="attempt_test"
 
     #num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
     num_nodes=(9)
@@ -524,7 +523,7 @@ function experiment_compare_swarm_and_simulator() {
     step_size_duration="1"
 
     #This determined how quickly a timeout round is generated, Default:1000ms
-    round_initial_timeout="10000"
+    round_initial_timeout="1000"
     max_cpu_usage="0"
     only_keep_merged_logs="1"
 
@@ -536,8 +535,122 @@ function experiment_compare_swarm_and_simulator() {
             sending_interval_duration="${sending_interval[$i_counter]}"
             cluster_config="$(get_cluster_config "${num_nodes[$i_counter]}" "50" "10" "500")"
             throughput="${start_throughput[$i_counter]}"
-            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/$attempt_name/${num_nodes[$i_counter]}_nodes"
+            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/Experiment1/attempt2/${num_nodes[$i_counter]}_nodes"
             cfg_override_params="capacity_per_user=10000,round_initial_timeout_ms=$round_initial_timeout"
+
+            start_experiment
+            while [ $? != "0" ]
+            do
+                start_experiment
+            done
+        done
+    done
+}
+
+function experiment_compare_experiment_2() {
+    #Data used for comparing Libra Swarm agains the simulator
+    image_node0="libra_validator_dynamic:latest"
+    image_node1="libra_validator_dynamic:latest"
+    num_rounds="1"
+    nodes="5"
+    sending_interval_duration="0.15"
+
+    delays=(10 30 50 70 90 110 130 150 170 190 210 230 250)
+    start_throughput=(1040 1000 980 960 940 910 880 860 845 815 795 960 760)
+
+    duration="180"
+    step_size_throughput="0"
+    step_size_duration="1"
+
+    #This determined how quickly a timeout round is generated, Default:1000ms
+    round_initial_timeout="1000"
+    max_cpu_usage="0"
+    only_keep_merged_logs="1"
+
+    for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
+    do
+        for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
+        do
+            cluster_config="$(get_cluster_config "5" "${delays[$i_counter]}" "10" "500")"
+            throughput="${start_throughput[$i_counter]}"
+            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/Experiment2/attempt1/${delays[$i_counter]}_delay"
+            cfg_override_params="capacity_per_user=10000,round_initial_timeout_ms=$round_initial_timeout"
+
+            start_experiment
+            while [ $? != "0" ]
+            do
+                start_experiment
+            done
+        done
+    done
+}
+
+function experiment_compare_experiment_3() {
+    #Data used for comparing Libra Swarm agains the simulator
+    image_node0="libra_validator_dynamic:latest"
+    image_node1="libra_validator_dynamic:latest"
+    num_rounds="1"
+    nodes="5"
+    sending_interval_duration="0.15"
+
+    bandwidth=(10 20 30 40 50 60 70 80 90 100 200 300 400 500)
+    start_throughput=(760 865 910 930 940 940 945 950 955 955 960 980 990 1000)
+
+    duration="180"
+    step_size_throughput="0"
+    step_size_duration="1"
+
+    #This determined how quickly a timeout round is generated, Default:1000ms
+    round_initial_timeout="1000"
+    max_cpu_usage="0"
+    only_keep_merged_logs="1"
+
+    for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
+    do
+        for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
+        do
+            cluster_config="$(get_cluster_config "5" "50" "10" "${bandwidth[$i_counter]}")"
+            throughput="${start_throughput[$i_counter]}"
+            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/Experiment3/attempt1/${bandwidth[$i_counter]}_bandwidth"
+            cfg_override_params="capacity_per_user=10000,round_initial_timeout_ms=$round_initial_timeout"
+
+            start_experiment
+            while [ $? != "0" ]
+            do
+                start_experiment
+            done
+        done
+    done
+}
+
+function experiment_compare_experiment_4() {
+    #Data used for comparing Libra Swarm agains the simulator
+    image_node0="libra_validator_dynamic:latest"
+    image_node1="libra_validator_dynamic:latest"
+    num_rounds="1"
+    nodes="5"
+    sending_interval_duration="0.15"
+
+    max_block_size=(100 200 300 400 500 600 700 800 900 1000 1500 2000)
+    start_throughput=(320 490 635 750 815 860 890 950 980 990 1070 1120)
+
+    duration="180"
+    step_size_throughput="0"
+    step_size_duration="1"
+
+    #This determined how quickly a timeout round is generated, Default:1000ms
+    round_initial_timeout="1000"
+    max_cpu_usage="0"
+    only_keep_merged_logs="1"
+
+    for (( i_counter=0; i_counter<${#delays[@]}; i_counter++ ));
+    do
+        for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
+        do
+            cluster_config="$(get_cluster_config "5" "50" "10" "500")"
+            throughput="${start_throughput[$i_counter]}"
+            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/Experiment4/attempt1/${max_block_size[$i_counter]}_blocksize"
+            cfg_override_params="capacity_per_user=10000,max_block_size=${max_block_size[$i_counter]},round_initial_timeout_ms=$round_initial_timeout"
 
             start_experiment
             while [ $? != "0" ]
@@ -620,8 +733,5 @@ function test_experiment() {
     done
 }
 
-experiment_1
-experiment_2
-experiment_3
-experiment_4
+experiment_compare_experiment_2
 echo "Experiments finished!"
