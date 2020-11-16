@@ -46,7 +46,7 @@ use crate::{
 };
 
 // JP CODE
-use std::{io::{prelude::*, BufWriter}, time::Instant};
+use std::{io::{prelude::*, BufWriter}, time::{SystemTime, UNIX_EPOCH, Instant}};
 use std::{fs, thread, path::Path, fs::OpenOptions};
 use futures::{channel::mpsc::{channel, Sender, Receiver}};
 
@@ -290,12 +290,14 @@ impl RoundManager {
         debug!("Processing {}", new_round_event);
         counters::CURRENT_ROUND.set(new_round_event.round as i64);
         counters::ROUND_TIMEOUT_MS.set(new_round_event.timeout.as_millis() as i64);
+        let mut timeout_round = "0";
         match new_round_event.reason {
             NewRoundReason::QCReady => {
                 counters::QC_ROUNDS_COUNT.inc();
             }
             NewRoundReason::Timeout => {
                 counters::TIMEOUT_ROUNDS_COUNT.inc();
+                timeout_round = "1";
             }
         };
         
@@ -327,9 +329,9 @@ impl RoundManager {
 
         // JP CODE
         if let Some(start) = msg_start_time {
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
             let duration = start.elapsed();
-            //println!("Time elapsed for process_new_round_event(when this node is the next proposer) is: {:?}", duration);
-            self.metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: format!("{},{:?}", number_of_transactions, duration.as_micros())}).unwrap_or_else(|error| {
+            self.metric_sender_jp.try_send(JPsenderStruct {to_file: 0, message: format!("{},{:?},{},{}", number_of_transactions, duration.as_micros(), timeout_round, now)}).unwrap_or_else(|error| {
                 println!("Error: {:?}", error);
             });
         }
@@ -608,7 +610,6 @@ impl RoundManager {
 
          // JP CODE
          if let Some(duration) = msg_start_time {
-            //println!("Time elapsed for process_proposal is: {:?}", duration);
             let msg = format!("{},{:?}", nr_txns, duration.elapsed().as_micros());
             self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
                 println!("Error: {:?}", error);
