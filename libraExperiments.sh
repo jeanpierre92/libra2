@@ -324,7 +324,11 @@ function experiment_1() {
     #Constant:
     num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
     sending_interval=(0.1 0.1 0.1 0.2 0.3 0.4 0.4 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3)
-    start_throughput=(1255 1170 1090 970 890 800 770 740 720 660 610 580 540 525 490 455)
+    #start_throughput=(1255 1170 1090 970 890 800 770 740 720 660 610 580 540 525 490 455)
+    #start_throughput=(1200 1100 1030 970 900 810 770 740 700 650 620 600 550 520 500 430)
+    #start_throughput=(1170 1080 1050 980 920 850 780 760 720 670 630 610 565 530 500 420)
+    start_throughput=(1190 1100 1060 990 915 845 775 765 715 675 635 605 565 525 505 415)
+    #                   2   3     4   5   6   7   8   9   10  11  12  13  14  15  16  17
 
     cfg_override_params="capacity_per_user=10000"
     duration="360"
@@ -339,7 +343,7 @@ function experiment_1() {
             cluster_config="$(get_cluster_config "$nodes" "50" "10" "500")"
             sending_interval_duration="${sending_interval[$i_counter]}"
             throughput=${start_throughput[$i_counter]}
-            log_save_location="$base_directory/Experiment1_constant/${num_nodes[$i_counter]}_nodes"
+            log_save_location="$base_directory/Experiment1_constant/attempt3/${num_nodes[$i_counter]}_nodes"
 
             start_experiment
             while [ $? != "0" ]
@@ -358,8 +362,12 @@ function experiment_2() {
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
     delays=(10 30 50 70 90 110 130 150 170 190 210 230 250)
-    start_throughput=(970 935 918 918 891 864 839 830 810 800 788 777 764)
-    
+    #start_throughput=(970 935 918 918 891 864 839 830 810 800 788 777 764)
+    #start_throughput=(1030 970 950 950 930 900 860 850 840 810 790 785 770)
+    #start_throughput=(1050 1000 980 960 940 910 880 865 850 820 800 790 770)
+    start_throughput=(1050 1010 990 970 950 920 890 870 855 825 805 790 770)
+    #                 10   30   50  70  90  110 130 150 170 190 210 230 250
+
     sending_interval_duration="0.15"
     cfg_override_params="capacity_per_user=10000"
     duration="360"
@@ -372,7 +380,7 @@ function experiment_2() {
         do
             throughput=${start_throughput[$i_counter]}
             cluster_config="$(get_cluster_config "$nodes" "${delays[$i_counter]}" "10" "500")"
-            log_save_location="$base_directory/Experiment2_constant/${delays[$i_counter]}_delay"
+            log_save_location="$base_directory/Experiment2_constant/attempt3/${delays[$i_counter]}_delay"
 
             start_experiment
             while [ $? != "0" ]
@@ -391,9 +399,12 @@ function experiment_3() {
     image_node0="libra_validator_dynamic_perf_node0:latest"
     image_node1="libra_validator_dynamic_perf_node1:latest"
     bandwidth=(10 20 30 40 50 60 70 80 90 100 200 300 400 500)
-    start_throughput=(484 664 724 772 791 792 795 800 803 805 836 843 840 840)
-    start_throughput=(484 664 724 772 791 792 795 800 803 805 836 843 840 840)
-    
+    #start_throughput=(484 664 724 772 791 792 795 800 803 805 836 843 840 840)
+    #start_throughput=(700 800 850 900 900 900 910 920 930 935 940 950 960 970)
+    #start_throughput=(760 860 900 930 940 940 950 950 950 960 970 980 990 1000)
+    start_throughput=(770 875 920 940 950 950 955 960 965 965 970 990 1000 1010)
+    #                  10  20  30  40  50  60  70  80  90  100 200 300 400 500
+
     cfg_override_params="capacity_per_user=10000"
     duration="360"
     step_size_throughput="0"
@@ -405,7 +416,7 @@ function experiment_3() {
         do
             throughput=${start_throughput[$i_counter]}
             cluster_config="$(get_cluster_config "$nodes" "50" "10" "${bandwidth[$i_counter]}")"
-            log_save_location="$base_directory/Experiment3_contant/${bandwidth[$i_counter]}_bandwidth"
+            log_save_location="$base_directory/Experiment3_constant/attempt3/${bandwidth[$i_counter]}_bandwidth"
 
             start_experiment
             while [ $? != "0" ]
@@ -425,7 +436,12 @@ function experiment_4() {
     image_node1="libra_validator_dynamic_perf_node1:latest"
 
     max_block_size=(100 200 300 400 500 600 700 800 900 1000 1500 2000)
-    start_throughput=(257 411 540 650 733 760 785 800 830 866 914 927)
+    #start_throughput=(257 411 540 650 733 760 785 800 830 866 914 927)
+    #start_throughput=(750 770 800 830 850 860 870 900 930 970 1000 1050)
+    #start_throughput=(350 550 650 780 830 865 885 920 950 990 1070 1100)
+    start_throughput=(330 500 645 760 825 870 900 960 990 1000 1080 1130)
+    #                 100 200 300 400 500 600 700 800 900 1000 1500 2000
+
     cluster_config="$(get_cluster_config "$nodes" "50" "10" "500")"
 
     sending_interval_duration="0.15"
@@ -438,7 +454,7 @@ function experiment_4() {
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
             throughput=${start_throughput[$i_counter]}
-            log_save_location="$base_directory/Experiment4_constant/${max_block_size[$i_counter]}_blocksize"
+            log_save_location="$base_directory/Experiment4_constant/attempt3/${max_block_size[$i_counter]}_blocksize"
             cfg_override_params="capacity_per_user=10000,max_block_size=${max_block_size[$i_counter]}"
 
             start_experiment
@@ -491,26 +507,37 @@ function experiment_compare_swarm_and_simulator() {
     image_node0="libra_validator_dynamic:latest"
     image_node1="libra_validator_dynamic:latest"
     num_rounds="1"
-    nodes=(2 3 4 5 6 7 8 9 10)
+    attempt_name="attempt_test"
 
-    start_throughput=(1100 1120 1030 930 850 800 750 730 700)
-    duration="150"
+    #num_nodes=(2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17)
+    num_nodes=(9)
+    #start_throughput=(1230 1145 1060 960 840 785 730 705 680)
+    #start_throughput=(1200 1150 1070 1000 900 820 750 730 700 11 12 13 14 15 16 17)
+    #start_throughput=(1210 1150 1060 980 900 830 760 740 710 640 625 610 545 515 510 400)
+    start_throughput=(800)
+    #sending_interval=(0.1 0.15 0.2 0.25 0.3 0.35 0.4 0.35 0.3 0.3 0.3 0.3 0.3 0.3 0.3 0.3)
+    sending_interval=(0.35)
+    
+    duration="180"
 
     step_size_throughput="0"
     step_size_duration="1"
 
+    #This determined how quickly a timeout round is generated, Default:1000ms
+    round_initial_timeout="10000"
     max_cpu_usage="0"
-    sending_interval_duration="0.25"
     only_keep_merged_logs="1"
 
-    for (( i_counter=0; i_counter<${#nodes[@]}; i_counter++ ));
+    for (( i_counter=0; i_counter<${#num_nodes[@]}; i_counter++ ));
     do
         for (( j_counter=0; j_counter<$num_rounds; j_counter++ ));
         do
-            cluster_config="$(get_cluster_config "$nodes" "50" "10" "500")"
+            nodes=${num_nodes[$i_counter]}
+            sending_interval_duration="${sending_interval[$i_counter]}"
+            cluster_config="$(get_cluster_config "${num_nodes[$i_counter]}" "50" "10" "500")"
             throughput="${start_throughput[$i_counter]}"
-            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/${nodes[$i_counter]}_nodes"
-            cfg_override_params="capacity_per_user=10000"
+            log_save_location="$base_directory/Experiment_compare_swarm_and_simulator/$attempt_name/${num_nodes[$i_counter]}_nodes"
+            cfg_override_params="capacity_per_user=10000,round_initial_timeout_ms=$round_initial_timeout"
 
             start_experiment
             while [ $? != "0" ]
@@ -594,10 +621,7 @@ function test_experiment() {
 }
 
 experiment_1
-set_default_parameters
 experiment_2
-set_default_parameters
 experiment_3
-set_default_parameters
 experiment_4
 echo "Experiments finished!"
