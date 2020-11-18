@@ -219,7 +219,8 @@ impl RoundManager {
         thread::spawn(move || {
             let paths = vec!["jp_consensus_process_new_round.csv", 
                              "jp_consensus_process_proposal.csv",
-                             "jp_consensus_ensure_round_and_sync_up.csv"];
+                             "jp_consensus_ensure_round_and_sync_up.csv",
+                             "jp_consensus_process_proposal_without_sync.csv"];
 
             let mut buf = vec![];
 
@@ -242,7 +243,8 @@ impl RoundManager {
                         match msg.to_file {
                             0 => buf[0].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_new_round.csv"),
                             1 => buf[1].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_proposal.csv"),
-                            2 => buf[2].write_all(msg.message.as_bytes()).expect("jp_consensus_ensure_round_and_sync_up.csv"),
+                            2 => buf[2].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_ensure_round_and_sync_up.csv"),
+                            3 => buf[3].write_all(msg.message.as_bytes()).expect("Could not write to jp_consensus_process_proposal_without_sync.csv"),
                             _ => panic!("Unknown file to log to"),
                         }
                     },
@@ -380,12 +382,12 @@ impl RoundManager {
             nr_txns = payload.len();
         }
 
-        let msg = format!("{},{:?}", nr_txns, ensure_round_and_sync_up_duration.elapsed().as_micros());
+        let msg = format!("{},{:?}", nr_txns, &ensure_round_and_sync_up_duration.elapsed().as_micros());
         self.metric_sender_jp.try_send(JPsenderStruct {to_file: 2, message: msg}).unwrap_or_else(|error| {
             println!("Error: {:?}", error);
         });
 
-        self.process_proposal(proposal_msg.take_proposal(), msg_start_time).await
+        self.process_proposal(proposal_msg.take_proposal(), msg_start_time, ensure_round_and_sync_up_duration.elapsed()).await
     }
 
     /// Sync to the sync info sending from peer if it has newer certificates, if we have newer certificates
@@ -558,7 +560,7 @@ impl RoundManager {
     /// 3. Try to vote for it following the safety rules.
     /// 4. In case a validator chooses to vote, send the vote to the representatives at the next
     /// round.
-    async fn process_proposal(&mut self, proposal: Block, msg_start_time: Option<Instant>) -> Result<()> {
+    async fn process_proposal(&mut self, proposal: Block, msg_start_time: Option<Instant>, ensure_round_and_sync_up_duration: Duration) -> Result<()> {
         // JP CODE
         let mut nr_txns = 0;
         //let start = Instant::now();
@@ -609,14 +611,20 @@ impl RoundManager {
         self.network.send_vote(vote_msg, vec![recipients]).await;
 
          // JP CODE
-         if let Some(duration) = msg_start_time {
+        if let Some(duration) = msg_start_time {
             let msg = format!("{},{:?}", nr_txns, duration.elapsed().as_micros());
             self.metric_sender_jp.try_send(JPsenderStruct {to_file: 1, message: msg}).unwrap_or_else(|error| {
                 println!("Error: {:?}", error);
             });
-         }
-         
+        }
 
+        if let Some(duration) = msg_start_time {
+            let msg = format!("{},{:?}", nr_txns, (duration.elapsed().as_micros() - ensure_round_and_sync_up_duration.as_micros()));
+            self.metric_sender_jp.try_send(JPsenderStruct {to_file: 3, message: msg}).unwrap_or_else(|error| {
+                println!("Error: {:?}", error);
+            });
+        }
+         
         Ok(())
     }
 
