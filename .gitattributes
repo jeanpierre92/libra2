@@ -1,7 +1,6 @@
 # Ensure that text files that any contributor introduces to the repository
 # have their line endings normalized to LF
 * text=auto
-
 # All known text filetypes
 *.md text
 *.proto text
@@ -10,7 +9,7 @@
 *.toml text
 *.txt text
 *.yml text
-
 # Use Rust syntax highlighter for Move and Move IR code
 *.move linguist-language=Rust
 *.mvir linguist-language=Rust
+/LibraNode_Binary/libra-node filter=lfs diff=lfs merge=lfs -text
