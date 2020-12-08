@@ -29,7 +29,7 @@ function set_default_parameters() {
 
     only_keep_merged_logs="1"
 
-    experiment_location="server"
+    experiment_location="jp"
 
     if [ "$experiment_location" = "jp" ]
     then
@@ -706,7 +706,7 @@ function vary_sending_interval() {
 }
 
 function test_experiment() {
-    for (( i_counter=5; i_counter<=5; i_counter++ ))
+    for (( i_counter=3; i_counter<=3; i_counter++ ))
     do
         image_node0="libra_validator_dynamic:latest"
         image_node1="libra_validator_dynamic:latest"
@@ -715,8 +715,8 @@ function test_experiment() {
         nodes=$i_counter
 
         sending_interval_duration="0.25"
-        throughput="900"
-        duration="300"
+        throughput="500"
+        duration="120"
 
         cluster_config="$(get_cluster_config "$nodes" "50" "10" "500")"
         log_save_location="$base_directory/Experiment_test/${nodes}_nodes"
@@ -733,5 +733,5 @@ function test_experiment() {
     done
 }
 
-experiment_compare_experiment_2
+test_experiment
 echo "Experiments finished!"
