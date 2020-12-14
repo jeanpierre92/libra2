@@ -11,7 +11,7 @@ pub struct RpcConfig {
     pub address: SocketAddr,
 }
 
-pub const DEFAULT_JSON_RPC_PORT: u16 = 8080;
+pub const DEFAULT_JSON_RPC_PORT: u16 = 8085;
 
 impl Default for RpcConfig {
     fn default() -> RpcConfig {

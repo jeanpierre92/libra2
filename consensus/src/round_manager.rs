@@ -46,8 +46,8 @@ use crate::{
 };
 
 // JP CODE
-use std::{io::{prelude::*, BufWriter}, time::{SystemTime, UNIX_EPOCH, Instant}};
-use std::{fs, thread, path::Path, fs::OpenOptions};
+use std::{env, io::{prelude::*, BufWriter}, time::{SystemTime, UNIX_EPOCH, Instant}};
+use std::{thread, path::Path, fs::OpenOptions};
 use futures::{channel::mpsc::{channel, Sender, Receiver}};
 
 pub enum UnverifiedEvent {
@@ -214,7 +214,6 @@ impl RoundManager {
     ) -> Self {
         // JP CODE
         let (tx, mut rx): (Sender<JPsenderStruct>, Receiver<JPsenderStruct>) = channel(1024);
-        fs::create_dir_all("/jp_metrics").unwrap();
 
         thread::spawn(move || {
             let paths = vec!["jp_consensus_process_new_round.csv", 
@@ -224,17 +223,20 @@ impl RoundManager {
 
             let mut buf = vec![];
 
+            let key = "SLURM_NODEID";
+            let value = env::var(key).unwrap().replace("\"", "");
+
             for i in 0..paths.len() {
                 let buf_handle = BufWriter::new(OpenOptions::new()
                 .write(true)
                 .read(true)
                 .append(true)
                 .create(true)
-                .open(Path::new(&format!("jp_metrics/{}", paths.get(i).unwrap())))
+                .open(Path::new(&format!("/home/mcs001/s135123/ledger_data/node{}/logger_data/{}", value, paths.get(i).unwrap())))
                 .expect("Cannot open file!"));
                 buf.push(buf_handle);
             }
-    
+
             loop {
                 let received = rx.try_next();
                 match received {

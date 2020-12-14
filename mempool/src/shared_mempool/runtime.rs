@@ -29,7 +29,7 @@ use vm_validator::vm_validator::{TransactionValidation, VMValidator};
 
 // JP CODE
 use std::{ops::Deref};
-use std::{fs, thread, path::Path, fs::OpenOptions};
+use std::{env, thread, path::Path, fs::OpenOptions};
 use std::io::{prelude::*, BufWriter};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -99,15 +99,18 @@ pub(crate) fn start_shared_mempool<V>(
     ));
 
     // JP CODE
-    fs::create_dir_all("/jp_metrics").unwrap();
+    //fs::create_dir_all("/jp_metrics").unwrap();
 
     thread::spawn(move || {
+        let key = "SLURM_NODEID";
+        let value = env::var(key).unwrap().replace("\"", "");
+
         let mut buf_handle = BufWriter::new(OpenOptions::new()
         .write(true)
         .read(true)
         .append(true)
         .create(true)
-        .open(Path::new(&format!("jp_metrics/{}", "jp_mempool_size.csv")))
+        .open(Path::new(&format!("/home/mcs001/s135123/ledger_data/node{}/logger_data/{}", value, "jp_mempool_size.csv")))
         .expect("Cannot open file!"));
 
         loop {
