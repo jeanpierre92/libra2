@@ -85,7 +85,7 @@ pub(crate) async fn coordinator<V>(
                          
         let mut buf = vec![];
 
-        let key = "SLURM_NODEID";
+        let key = "LIBRA_NODE_ID";
         let value = env::var(key).unwrap().replace("\"", "");
 
         for i in 0..paths.len() {

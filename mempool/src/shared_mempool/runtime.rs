@@ -102,7 +102,8 @@ pub(crate) fn start_shared_mempool<V>(
     //fs::create_dir_all("/jp_metrics").unwrap();
 
     thread::spawn(move || {
-        let key = "SLURM_NODEID";
+
+        let key = "LIBRA_NODE_ID";
         let value = env::var(key).unwrap().replace("\"", "");
 
         let mut buf_handle = BufWriter::new(OpenOptions::new()

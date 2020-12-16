@@ -150,7 +150,7 @@ impl BlockStore {
             let paths = vec!["jp_blockstore_process_block.csv", "jp_cpu_load.csv"];
             let mut buf = vec![];
 
-            let key = "SLURM_NODEID";
+            let key = "LIBRA_NODE_ID";
             let value = env::var(key).unwrap().replace("\"", "");
 
             for i in 0..paths.len() {
