@@ -370,11 +370,9 @@ pub async fn emit_tx(
         
         if x < 1.0 {
             number_of_txns_per_cycle *= x;
-            x += 0.05;
+            x += 0.1;
         }
         number_of_txns_per_cycle = number_of_txns_per_cycle.round();
-
-        
 
         job.number_of_txns_per_cycle.store(number_of_txns_per_cycle as u64, Ordering::Relaxed);
         tokio::time::delay_for(window).await;

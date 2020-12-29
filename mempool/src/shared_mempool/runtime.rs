@@ -114,13 +114,29 @@ pub(crate) fn start_shared_mempool<V>(
         .open(Path::new(&format!("/home/mcs001/s135123/ledger_data/node{}/logger_data/{}", value, "jp_mempool_size.csv")))
         .expect("Cannot open file!"));
 
+        if value == "0" {
+            let mut buf_handle_tofile = BufWriter::new(OpenOptions::new()
+            .write(true)
+            .read(true)
+            .create(true)
+            .truncate(true)
+            .open(Path::new(&format!("/home/mcs001/s135123/output_debug_logs/", value, "mempool_size.txt")))
+            .expect("Cannot open file!"));
+        }
+        
         loop {
+            let nr_txns = jp_mempool.lock().unwrap().deref().transactions.system_ttl_index.size().to_string()
             let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time?").as_millis();
-            let mut msg = format!("{},{}", jp_mempool.lock().unwrap().deref().transactions.system_ttl_index.size().to_string(), now);
+            let mut msg = format!("{},{}", &nr_txns, now);
             msg.push('\n');
             buf_handle.write_all(msg.as_bytes()).expect("Could not write to jp_mempool_size.csv");
             buf_handle.flush().unwrap();
-            thread::sleep(std::time::Duration::from_millis(1000));
+
+            if value == "0" {
+                buf_handle_tofile.set_len(0)?;
+                buf_handle_tofile.write_all(format!("{}", &nr_txns));
+            }
+            thread::sleep(std::time::Duration::from_millis(100));
         }
     });
 }
